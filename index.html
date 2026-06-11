@@ -69,6 +69,12 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    .topbar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
     .topbar h1 {
       font-family: 'Syne', system-ui, sans-serif;
       font-size: 22px;
@@ -78,6 +84,25 @@
     }
     .topbar h1 span { color: var(--accent); }
     .topbar p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+    .user-chip-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    #userChipName {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
 
     /* ── PLAYERS ── */
     .players-bar {
@@ -771,10 +796,18 @@
     <div class="login-title">App del <span>Desfase</span> 🔥</div>
     <div class="login-sub">Identifícate para entrar</div>
     <div class="login-label">¿Quién eres?</div>
-    <div class="user-grid" id="userGrid"></div>
+    <div class="user-grid">
+      <button class="user-btn" id="ubtn-Miguel"     onclick="selectUser('Miguel')">Miguel</button>
+      <button class="user-btn" id="ubtn-Fabián"     onclick="selectUser('Fabián')">Fabián</button>
+      <button class="user-btn" id="ubtn-Germán"     onclick="selectUser('Germán')">Germán</button>
+      <button class="user-btn" id="ubtn-Alejandro"  onclick="selectUser('Alejandro')">Alejandro</button>
+      <button class="user-btn" id="ubtn-Diego"      onclick="selectUser('Diego')">Diego</button>
+      <button class="user-btn" id="ubtn-Javi"       onclick="selectUser('Javi')">Javi</button>
+    </div>
     <div class="login-label">Contraseña</div>
     <div class="login-pass-row">
-      <input type="password" id="passInput" placeholder="••••••••" autocomplete="off" />
+      <input type="password" id="passInput" placeholder="••••••••"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
       <button class="login-enter" onclick="tryLogin()">Entrar →</button>
     </div>
     <div class="login-error" id="loginError"></div>
@@ -981,18 +1014,14 @@ function setSyncStatus(state) {
 }
 
 /* ── LOGIN ── */
-const VALID_USERS = ['Miguel', 'Germán', 'Fabián', 'Diego', 'Alejandro', 'Javi'];
+const VALID_USERS = ['Miguel', 'Fabián', 'Germán', 'Alejandro', 'Diego', 'Javi'];
 const PASSWORD    = 'clave$1';
 let loginUser     = null;
+let listenerSetUp = false;
 
-(function initLogin() {
-  document.getElementById('userGrid').innerHTML = VALID_USERS.map(u =>
-    `<button class="user-btn" id="ubtn-${u}" onclick="selectUser('${u}')">${u}</button>`
-  ).join('');
-  document.getElementById('passInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') tryLogin();
-  });
-})();
+document.getElementById('passInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
 
 function selectUser(n) {
   loginUser = n;
@@ -1012,11 +1041,18 @@ function tryLogin() {
 
   /* Acceso correcto */
   document.getElementById('loginScreen').style.display = 'none';
-
   currentPlayer = loginUser;
 
-  /* Conectar a Firebase o caer en modo local */
-  if (db) {
+  /* Re-renderizar con el nuevo usuario */
+  renderCreditsTable();
+  renderScenarios();
+  renderBetsList();
+  updatePot();
+  updateActiveLbl();
+
+  /* Conectar a Firebase solo la primera vez */
+  if (db && !listenerSetUp) {
+    listenerSetUp = true;
     setSyncStatus('syncing');
 
     db.ref('desfase/bets').on('value', snap => {
@@ -1039,13 +1075,8 @@ function tryLogin() {
       if (!snap.val()) setSyncStatus('offline');
     });
 
-  } else {
+  } else if (!db) {
     setSyncStatus('off');
-    renderCreditsTable();
-    renderScenarios();
-    renderBetsList();
-    updatePot();
-    updateActiveLbl();
   }
 }
 
