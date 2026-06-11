@@ -601,6 +601,52 @@
     .winner-pot { font-size: 22px; font-weight: 800; color: var(--gold); font-family: 'Syne', system-ui, sans-serif; }
     .no-winner { font-size: 14px; color: var(--text2); }
 
+    /* ── ADMIN MODAL ── */
+    .amodal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .amodal-overlay.open { display: flex; }
+    .amodal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .amodal h3 { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 14px; }
+    .amodal input {
+      width: 100%;
+      padding: 11px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      outline: none;
+      margin-bottom: 8px;
+    }
+    .amodal input:focus { border-color: var(--accent); }
+    .amodal-err { font-size: 13px; color: var(--accent); min-height: 18px; margin-bottom: 10px; }
+    .amodal-btns { display: flex; gap: 8px; }
+    .amodal-btns button {
+      flex: 1; padding: 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .amodal-ok  { background: var(--accent); color: #fff; border-color: var(--accent) !important; }
+    .amodal-cancel { background: var(--surface2); color: var(--text2); }
+
     /* ── LOGIN ── */
     #loginScreen {
       position: fixed;
@@ -817,6 +863,20 @@
       Juegos
     </button>
   </nav>
+
+<!-- ADMIN RESET MODAL -->
+<div class="amodal-overlay" id="adminModal">
+  <div class="amodal">
+    <h3>⚠️ Resetear todo</h3>
+    <input type="password" id="adminPassInput" placeholder="Contraseña de admin..."
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    <div class="amodal-err" id="adminPassErr"></div>
+    <div class="amodal-btns">
+      <button class="amodal-cancel" onclick="closeAdminModal()">Cancelar</button>
+      <button class="amodal-ok" onclick="confirmReset()">Resetear todo</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /app -->
 
@@ -1143,15 +1203,23 @@ function renderScenarios() {
 function placeBet(scenarioId) {
   if (!currentPlayer) { toast('Inicia sesión primero'); return; }
   if (creditsLeft(currentPlayer) <= 0) { toast('Sin créditos — ya apostaste tus 2€'); return; }
-  const bet = { player: currentPlayer, scenarioId, amount: 1, timestamp: Date.now() };
+  const bet     = { player: currentPlayer, scenarioId, amount: 1, timestamp: Date.now() };
+  const tempKey = 'temp_' + Date.now();
+
+  /* Actualización optimista local — responde inmediatamente sin esperar a Firebase */
+  betsList.push({ key: tempKey, ...bet });
+  renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+
   if (db) {
     setSyncStatus('syncing');
     db.ref('desfase/bets').push(bet)
       .then(() => setSyncStatus('online'))
-      .catch(() => setSyncStatus('offline'));
-  } else {
-    betsList.push({ key: 'local_' + Date.now(), ...bet });
-    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+      .catch(() => {
+        betsList = betsList.filter(b => b.key !== tempKey);
+        renderCreditsTable(); renderScenarios(); updatePot(); updateActiveLbl();
+        setSyncStatus('offline');
+        toast('Error al guardar la apuesta');
+      });
   }
 }
 
@@ -1167,7 +1235,46 @@ function deleteBet(key) {
   }
 }
 
-function updatePot() {
+function resetAll() {
+  document.getElementById('adminPassInput').value = '';
+  document.getElementById('adminPassErr').textContent = '';
+  document.getElementById('adminModal').classList.add('open');
+  setTimeout(() => document.getElementById('adminPassInput').focus(), 150);
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').classList.remove('open');
+}
+
+function confirmReset() {
+  const pass = document.getElementById('adminPassInput').value.trim();
+  if (pass !== 'M-1gu3l-2005') {
+    document.getElementById('adminPassErr').textContent = 'Contraseña incorrecta';
+    document.getElementById('adminPassInput').value = '';
+    document.getElementById('adminPassInput').focus();
+    return;
+  }
+  closeAdminModal();
+  if (db) {
+    setSyncStatus('syncing');
+    db.ref('desfase').remove()
+      .then(() => {
+        setSyncStatus('online');
+        betsList = [];
+        const banner = document.getElementById('winnerBanner');
+        if (banner) banner.style.display = 'none';
+        renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+        toast('✓ Todo reseteado');
+      })
+      .catch(() => setSyncStatus('offline'));
+  } else {
+    betsList = [];
+    const banner = document.getElementById('winnerBanner');
+    if (banner) banner.style.display = 'none';
+    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+    toast('✓ Todo reseteado (modo local)');
+  }
+}
   const total = betsList.reduce((s, b) => s + (b.amount || 1), 0);
   const amtEl = document.getElementById('potAmount');
   const subEl = document.getElementById('potSub');
@@ -1298,8 +1405,11 @@ renderRetos();
 renderJuegos();
 renderScenarios();
 
-document.getElementById('pinput').addEventListener('keydown', e => {
+document.getElementById('pinput') && document.getElementById('pinput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addPlayer();
+});
+document.getElementById('adminPassInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmReset();
 });
 </script>
 </body>
