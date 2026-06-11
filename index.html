@@ -819,7 +819,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition</p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v8</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1005,11 +1005,19 @@ try {
   }
 } catch(e) { console.warn('Firebase init error:', e); }
 
+let syncErrorMsg = null; /* si hay un error de Firebase, se muestra fijo en pantalla */
+
 function setSyncStatus(state) {
   // state: 'online' | 'syncing' | 'offline' | 'off'
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncTxt');
   if (!dot) return;
+  /* Si hay un error registrado, mostrarlo siempre — no dejar que 'online' lo tape */
+  if (syncErrorMsg) {
+    dot.className = 'sync-dot offline';
+    txt.textContent = syncErrorMsg;
+    return;
+  }
   dot.className = 'sync-dot ' + (state === 'off' ? '' : state);
   const labels = {
     online:  'Apuestas sincronizadas en tiempo real',
@@ -1048,14 +1056,8 @@ function tryLogin() {
   document.getElementById('loginScreen').style.display = 'none';
   currentPlayer = loginUser;
 
-  /* Re-renderizar con el nuevo usuario */
-  renderCreditsTable();
-  renderScenarios();
-  renderBetsList();
-  updatePot();
-  updateActiveLbl();
-
-  /* Conectar a Firebase solo la primera vez */
+  /* 1º: conectar a Firebase (solo la primera vez), ANTES de renderizar,
+     para que un fallo de render nunca impida registrar el listener */
   if (db && !listenerSetUp) {
     listenerSetUp = true;
     setSyncStatus('syncing');
@@ -1083,16 +1085,24 @@ function tryLogin() {
         updateActiveLbl();
         setSyncStatus('online');
       } catch (err) {
-        console.error('Error procesando apuestas:', err);
+        /* Mostrar el error EN PANTALLA, no solo en consola */
+        syncErrorMsg = '⚠️ Error procesando datos: ' + (err.message || err);
+        setSyncStatus('offline');
       }
     }, err => {
-      console.error('Error de lectura Firebase:', err);
+      /* PERMISSION_DENIED u otro error de lectura → visible en pantalla */
+      syncErrorMsg = '⚠️ Firebase no deja LEER: ' + (err.code || err.message || err) +
+        ' — revisa Reglas: ".read" debe ser true';
       setSyncStatus('offline');
     });
 
     db.ref('desfase/result').on('value', snap => {
       const resultId = snap.val();
       if (resultId !== null && resultId !== undefined) showWinner(Number(resultId));
+    }, err => { /* lectura de result denegada: mismo aviso */ 
+      syncErrorMsg = '⚠️ Firebase no deja LEER: ' + (err.code || err.message || err) +
+        ' — revisa Reglas: ".read" debe ser true';
+      setSyncStatus('offline');
     });
 
     db.ref('.info/connected').on('value', snap => {
@@ -1102,6 +1112,18 @@ function tryLogin() {
 
   } else if (!db) {
     setSyncStatus('off');
+  }
+
+  /* 2º: renderizar con el usuario actual */
+  try {
+    renderCreditsTable();
+    renderScenarios();
+    renderBetsList();
+    updatePot();
+    updateActiveLbl();
+  } catch (err) {
+    syncErrorMsg = '⚠️ Error de render: ' + (err.message || err);
+    setSyncStatus('offline');
   }
 }
 
@@ -1158,6 +1180,14 @@ function renderRetos() {
 }
 
 /* ── PORRA ── */
+function renderAllPorra() {
+  renderCreditsTable();
+  renderScenarios();
+  renderBetsList();
+  updatePot();
+  updateActiveLbl();
+}
+
 function creditsLeft(player) {
   const used = betsList.filter(b => b.player === player).reduce((s, b) => s + (b.amount || 1), 0);
   return Math.max(0, 2 - used);
@@ -1251,21 +1281,33 @@ function renderScenarios() {
   ).join('');
 }
 
+let betInFlight = false; /* evita que toques rápidos cuelen apuestas de más */
+
 function placeBet(scenarioId) {
+  if (betInFlight) return;
   if (!currentPlayer) { toast('Inicia sesión primero'); return; }
   if (creditsLeft(currentPlayer) <= 0) { toast('Sin créditos — ya apostaste tus 2€'); return; }
   const bet = { player: currentPlayer, scenarioId, amount: 1, timestamp: Date.now() };
 
   if (db) {
-    /* Firebase es la fuente de verdad: el listener repinta solo al confirmar */
+    betInFlight = true;
     setSyncStatus('syncing');
     db.ref('desfase/bets').push(bet)
-      .then(() => setSyncStatus('online'))
-      .catch(() => { setSyncStatus('offline'); toast('Error al guardar — sin conexión'); });
+      .then(ref => {
+        betInFlight = false;
+        /* RESPALDO LOCAL: aunque el listener de lectura falle,
+           este dispositivo refleja la apuesta confirmada.
+           Si el listener funciona, reconstruye la lista entera y no duplica. */
+        if (!betsList.some(b => b.key === ref.key)) {
+          betsList.push({ key: ref.key, ...bet });
+          renderAllPorra();
+        }
+        setSyncStatus('online');
+      })
+      .catch(() => { betInFlight = false; setSyncStatus('offline'); toast('Error al guardar — sin conexión'); });
   } else {
-    /* Modo local sin Firebase */
     betsList.push({ key: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2), ...bet });
-    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+    renderAllPorra();
   }
 }
 
@@ -1273,11 +1315,16 @@ function deleteBet(key) {
   if (db) {
     setSyncStatus('syncing');
     db.ref('desfase/bets/' + key).remove()
-      .then(() => setSyncStatus('online'))
+      .then(() => {
+        /* Respaldo local también al eliminar */
+        betsList = betsList.filter(b => b.key !== key);
+        renderAllPorra();
+        setSyncStatus('online');
+      })
       .catch(() => { setSyncStatus('offline'); toast('Error al eliminar'); });
   } else {
     betsList = betsList.filter(b => b.key !== key);
-    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+    renderAllPorra();
   }
 }
 
