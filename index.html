@@ -789,6 +789,7 @@
         <div class="reveal-title">¿Ya ha pasado? Revela el ganador</div>
         <div class="reveal-grid" id="revealGrid"></div>
         <button class="reveal-btn" style="margin-top:10px;color:var(--text3);border-color:var(--border)" onclick="clearResult()">🗑 Borrar resultado guardado</button>
+        <button class="reveal-btn" style="margin-top:6px;color:#FF4500;border-color:rgba(255,69,0,0.3)" onclick="resetAll()">⚠️ Resetear todo</button>
       </div>
       <div id="winnerBanner" style="display:none"></div>
     </div>
@@ -1216,8 +1217,39 @@ function clearResult() {
   if (!confirm('¿Borrar el resultado guardado? El banner desaparecerá para todos.')) return;
   const banner = document.getElementById('winnerBanner');
   if (banner) banner.style.display = 'none';
+  if (db) db.ref('desfase/result').remove();
+}
+
+function resetAll() {
+  const pass = prompt('Contraseña de administrador:');
+  if (pass === null) return;
+  if (pass !== 'M-1gu3l-2005') {
+    toast('Contraseña incorrecta 🚫');
+    return;
+  }
+  if (!confirm('¿Resetear TODO? Se borrarán todas las apuestas y el resultado para todos los jugadores.')) return;
   if (db) {
-    db.ref('desfase/result').remove();
+    setSyncStatus('syncing');
+    db.ref('desfase').remove()
+      .then(() => {
+        setSyncStatus('online');
+        betsList = [];
+        const banner = document.getElementById('winnerBanner');
+        if (banner) banner.style.display = 'none';
+        renderCreditsTable();
+        renderScenarios();
+        renderBetsList();
+        updatePot();
+        updateActiveLbl();
+        toast('✓ Todo reseteado');
+      })
+      .catch(() => setSyncStatus('offline'));
+  } else {
+    betsList = [];
+    const banner = document.getElementById('winnerBanner');
+    if (banner) banner.style.display = 'none';
+    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+    toast('✓ Todo reseteado (modo local)');
   }
 }
 
