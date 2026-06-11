@@ -1061,23 +1061,43 @@ function tryLogin() {
     setSyncStatus('syncing');
 
     db.ref('desfase/bets').on('value', snap => {
-      betsList = [];
-      snap.forEach(child => betsList.push({ key: child.key, ...child.val() }));
-      renderCreditsTable();
-      renderScenarios();
-      renderBetsList();
-      updatePot();
-      updateActiveLbl();
-      setSyncStatus('online');
+      try {
+        betsList = [];
+        const data = snap.val() || {};
+        Object.keys(data).forEach(key => {
+          const b = data[key];
+          if (b && b.player) {
+            betsList.push({
+              key,
+              player: b.player,
+              scenarioId: Number(b.scenarioId),
+              amount: Number(b.amount) || 1,
+              timestamp: Number(b.timestamp) || 0
+            });
+          }
+        });
+        renderCreditsTable();
+        renderScenarios();
+        renderBetsList();
+        updatePot();
+        updateActiveLbl();
+        setSyncStatus('online');
+      } catch (err) {
+        console.error('Error procesando apuestas:', err);
+      }
+    }, err => {
+      console.error('Error de lectura Firebase:', err);
+      setSyncStatus('offline');
     });
 
     db.ref('desfase/result').on('value', snap => {
       const resultId = snap.val();
-      if (resultId !== null) showWinner(resultId);
+      if (resultId !== null && resultId !== undefined) showWinner(Number(resultId));
     });
 
     db.ref('.info/connected').on('value', snap => {
       if (!snap.val()) setSyncStatus('offline');
+      else setSyncStatus('online');
     });
 
   } else if (!db) {
