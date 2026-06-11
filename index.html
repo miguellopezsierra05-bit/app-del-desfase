@@ -1306,6 +1306,8 @@ function confirmReset() {
     toast('✓ Todo reseteado (modo local)');
   }
 }
+
+function updatePot() {
   const total = betsList.reduce((s, b) => s + (b.amount || 1), 0);
   const amtEl = document.getElementById('potAmount');
   const subEl = document.getElementById('potSub');
@@ -1436,9 +1438,6 @@ renderRetos();
 renderJuegos();
 renderScenarios();
 
-document.getElementById('pinput') && document.getElementById('pinput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addPlayer();
-});
 document.getElementById('adminPassInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') confirmReset();
 });
