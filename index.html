@@ -492,6 +492,67 @@
     .sync-dot.offline { background: #FF4500; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
 
+    /* ── PORRA NEW ── */
+    .scenario.mine { border-color: var(--accent); background: rgba(255,69,0,0.05); }
+    .s-betters { font-size: 12px; color: var(--text2); margin: 6px 0 10px; min-height: 16px; }
+    .s-betters span { color: var(--accent); font-weight: 500; }
+    .bet-here-btn {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all .15s;
+    }
+    .bet-here-btn:active { transform: scale(0.98); }
+    .bet-here-btn.selected {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .reveal-section {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+    }
+    .reveal-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .reveal-grid { display: flex; flex-direction: column; gap: 6px; }
+    .reveal-btn {
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .reveal-btn:active { opacity: .8; }
+    .winner-banner {
+      margin-top: 14px;
+      padding: 20px;
+      background: rgba(255,208,0,0.08);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .winner-trophy { font-size: 32px; margin-bottom: 8px; }
+    .winner-title { font-family: 'Syne', system-ui, sans-serif; font-size: 18px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
+    .winner-names { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .winner-scenario { font-size: 13px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
+    .winner-pot { font-size: 22px; font-weight: 800; color: var(--gold); font-family: 'Syne', system-ui, sans-serif; }
+    .no-winner { font-size: 14px; color: var(--text2); }
+
     /* ── LOGIN ── */
     #loginScreen {
       position: fixed;
@@ -664,25 +725,29 @@
     <!-- PORRA -->
     <div id="sec-porra" class="section">
       <div class="fianza-hero">
-        <div class="fianza-lbl">Fianza en juego</div>
-        <div class="fianza-amt">300€</div>
-        <div class="fianza-sub">¿Cómo la vais a perder?</div>
+        <div class="fianza-lbl">Bote acumulado</div>
+        <div class="fianza-amt" id="potAmount">0€</div>
+        <div class="fianza-sub" id="potSub">2€ por persona — 0 jugadores han apostado</div>
       </div>
       <div class="sync-bar">
         <div class="sync-dot" id="syncDot"></div>
         <span id="syncTxt">Conectando...</span>
       </div>
       <div class="hint-box">
-        Cada jugador reparte <strong>10 fichas</strong> entre los escenarios que cree que van a ocurrir.<br>
-        El que más acierte gana gloria eterna (y posiblemente pagar menos).
+        Elige <strong>un escenario</strong> — si aciertas te llevas el bote entero.
+        Si hay empate, se reparte a partes iguales.
       </div>
-      <div class="sec-label">¿Quién apuesta?</div>
-      <div class="pchips" id="porraPlayers"><span class="empty">Añade jugadores arriba primero</span></div>
+      <div class="sec-label">Apostando como</div>
+      <div class="pchips" id="porraPlayers"><span class="empty">Inicia sesión primero</span></div>
       <div class="active-lbl" id="activeLbl">
-        <span>👤</span><span>Selecciona un jugador para apostar</span>
+        <span>👆</span><span>Selecciona tu nombre para apostar</span>
       </div>
       <div id="scenariosList"></div>
-      <button class="confirm-btn" onclick="confirmBets()">✓ Confirmar apuestas</button>
+      <div class="reveal-section">
+        <div class="reveal-title">¿Ya ha pasado? Revela el ganador</div>
+        <div class="reveal-grid" id="revealGrid"></div>
+      </div>
+      <div id="winnerBanner" style="display:none"></div>
     </div>
 
     <!-- JUEGOS -->
@@ -855,27 +920,24 @@ function tryLogin() {
   if (db) {
     setSyncStatus('syncing');
 
-    /* Escuchar TODOS los cambios de apuestas en tiempo real */
+    /* Escuchar apuestas en tiempo real — ahora cada jugador = 1 scenario id */
     db.ref('desfase/bets').on('value', snap => {
       const data = snap.val() || {};
-
-      /* Sincronizar jugadores conocidos */
       Object.keys(data).forEach(player => {
-        if (!players.includes(player)) {
-          players.push(player);
-          renderChips();
-        }
-        bets[player] = {};
-        Object.keys(data[player] || {}).forEach(id => {
-          bets[player][Number(id)] = data[player][id];
-        });
+        if (!players.includes(player)) { players.push(player); renderChips(); }
+        bets[player] = data[player]; // un número (scenarioId) o null
       });
-
-      /* Asegurar que el jugador local existe */
-      if (!bets[loginUser]) bets[loginUser] = {};
+      if (bets[loginUser] === undefined) bets[loginUser] = null;
       renderPorraPlayers();
       renderScenarios();
+      updatePot();
       setSyncStatus('online');
+    });
+
+    /* Escuchar si alguien ya reveló el resultado */
+    db.ref('desfase/result').on('value', snap => {
+      const resultId = snap.val();
+      if (resultId !== null) showWinner(resultId);
     });
 
     /* Detectar desconexión */
@@ -885,8 +947,10 @@ function tryLogin() {
 
   } else {
     setSyncStatus('off');
+    bets[loginUser] = null;
     renderPorraPlayers();
     renderScenarios();
+    updatePot();
   }
 }
 
@@ -901,7 +965,7 @@ function showLoginError(msg) {
 /* ── STATE ── */
 let players = [];
 let currentPlayer = null;
-let bets = {}; // { name: { scenarioId: fichas } }
+let bets = {}; // { playerName: scenarioId | null }  — una apuesta por jugador
 
 /* ── PLAYERS ── */
 function addPlayer() {
@@ -986,73 +1050,109 @@ function renderPorraPlayers() {
   ).join('');
 }
 
-function fichasLeft(n) {
-  return 10 - Object.values(bets[n] || {}).reduce((a, b) => a + b, 0);
-}
-
 function selectPlayer(n) {
   currentPlayer = n;
   renderPorraPlayers();
+  const myBet = bets[n];
+  const sc = myBet ? SCENARIOS.find(s => s.id === myBet) : null;
   document.getElementById('activeLbl').innerHTML =
-    `<span>👤</span><span>Apuestas de <strong>${n}</strong> — fichas: <strong id="fichasLeft" style="color:var(--accent)">${fichasLeft(n)}</strong>/10</span>`;
+    `<span>👤</span><span>Apostando como <strong style="color:var(--text)">${n}</strong>${sc ? ` — has elegido: <strong style="color:var(--accent)">${sc.t.substring(0,30)}…</strong>` : ''}</span>`;
   renderScenarios();
 }
 
 function renderScenarios() {
-  const total = Math.max(players.length * 10, 10);
-  document.getElementById('scenariosList').innerHTML = SCENARIOS.map(s => {
-    const cur = currentPlayer ? (bets[currentPlayer][s.id] || 0) : 0;
-    const tot = players.reduce((sum, p) => sum + (bets[p][s.id] || 0), 0);
-    const pct = Math.round((tot / total) * 100);
-    return `<div class="scenario">
+  const el = document.getElementById('scenariosList');
+  if (!el) return;
+  el.innerHTML = SCENARIOS.map(s => {
+    const betters = players.filter(p => bets[p] === s.id);
+    const isMine  = currentPlayer && bets[currentPlayer] === s.id;
+    return `<div class="scenario${isMine ? ' mine' : ''}">
       <div class="s-top">
         <div class="s-txt">${s.t}</div>
         <div class="s-mult">${s.m}</div>
       </div>
-      <div class="s-bot">
-        <input type="number" min="0" max="10" value="${cur}"
-          ${!currentPlayer ? 'disabled' : ''}
-          onchange="updateBet(${s.id}, this.value)" />
-        <span class="s-total">${tot} fichas apostadas</span>
-      </div>
-      <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>
+      <div class="s-betters">${
+        betters.length
+          ? betters.map(p => `<span>${p}</span>`).join(', ')
+          : '<span style="color:var(--text3)">Nadie de momento</span>'
+      }</div>
+      ${currentPlayer
+        ? `<button class="bet-here-btn${isMine ? ' selected' : ''}" onclick="selectScenario(${s.id})">
+             ${isMine ? '✓ Tu apuesta — toca para cambiar' : 'Apostar aquí'}
+           </button>`
+        : ''}
     </div>`;
   }).join('');
+
+  /* Rellenar también el grid de revelación */
+  const rg = document.getElementById('revealGrid');
+  if (rg) {
+    rg.innerHTML = SCENARIOS.map(s =>
+      `<button class="reveal-btn" onclick="confirmReveal(${s.id})">${s.t}</button>`
+    ).join('');
+  }
 }
 
-function updateBet(id, val) {
-  if (!currentPlayer) return;
-  const v = Math.max(0, Math.min(10, parseInt(val) || 0));
-  bets[currentPlayer][id] = v;
+function selectScenario(id) {
+  if (!currentPlayer) { toast('Selecciona tu nombre primero'); return; }
 
-  /* Actualizar contador local inmediatamente */
-  const el = document.getElementById('fichasLeft');
-  if (el) el.textContent = Math.max(0, fichasLeft(currentPlayer));
+  /* Toggle: si ya era tu apuesta, la quitas */
+  const newVal = bets[currentPlayer] === id ? null : id;
+  bets[currentPlayer] = newVal;
 
-  /* Escribir en Firebase si está configurado */
   if (db) {
     setSyncStatus('syncing');
-    db.ref(`desfase/bets/${currentPlayer}/${id}`).set(v)
+    const ref = db.ref(`desfase/bets/${currentPlayer}`);
+    (newVal !== null ? ref.set(newVal) : ref.remove())
       .then(() => setSyncStatus('online'))
       .catch(() => setSyncStatus('offline'));
+  }
+
+  renderScenarios();
+  updatePot();
+  selectPlayer(currentPlayer); /* refrescar label */
+}
+
+function updatePot() {
+  const count = Object.values(bets).filter(v => v !== null && v !== undefined).length;
+  const pot   = count * 2;
+  const amtEl = document.getElementById('potAmount');
+  const subEl = document.getElementById('potSub');
+  if (amtEl) amtEl.textContent = pot + '€';
+  if (subEl) subEl.textContent = `2€ por persona — ${count} jugador${count === 1 ? '' : 'es'} ha${count === 1 ? '' : 'n'} apostado`;
+}
+
+function confirmReveal(id) {
+  const sc = SCENARIOS.find(s => s.id === id);
+  if (!confirm(`¿Confirmas que ocurrió esto?\n\n"${sc.t}"\n\nEsto anunciará al ganador a todos.`)) return;
+  if (db) {
+    db.ref('desfase/result').set(id);
   } else {
-    renderScenarios();
+    showWinner(id);
   }
 }
 
-function confirmBets() {
-  if (!currentPlayer) { toast('Selecciona un jugador primero'); return; }
-  const r = fichasLeft(currentPlayer);
-  if (r < 0) { toast('Te pasaste de fichas — máximo 10'); return; }
-  if (db) {
-    /* Escribir el objeto completo de este jugador de una vez */
-    setSyncStatus('syncing');
-    db.ref(`desfase/bets/${currentPlayer}`).set(bets[currentPlayer] || {})
-      .then(() => { setSyncStatus('online'); toast(`✓ Apuestas de ${currentPlayer} guardadas`); })
-      .catch(() => { setSyncStatus('offline'); toast('Error al guardar — sin conexión'); });
+function showWinner(id) {
+  const sc      = SCENARIOS.find(s => s.id === id);
+  const winners = players.filter(p => bets[p] === id);
+  const count   = Object.values(bets).filter(v => v !== null && v !== undefined).length;
+  const pot     = count * 2;
+  const share   = winners.length > 0 ? (pot / winners.length).toFixed(2).replace('.00','') : 0;
+  const banner  = document.getElementById('winnerBanner');
+  if (!banner) return;
+  banner.style.display = 'block';
+  if (winners.length === 0) {
+    banner.innerHTML = `<div class="winner-trophy">😬</div>
+      <div class="winner-title">Nadie acertó</div>
+      <div class="no-winner">El bote de ${pot}€ queda en el grupo... o para más bebida</div>`;
   } else {
-    toast(`✓ Apuestas de ${currentPlayer} guardadas (modo local)`);
+    banner.innerHTML = `<div class="winner-trophy">🏆</div>
+      <div class="winner-title">${winners.length === 1 ? '¡Ganador!' : '¡Empate!'}</div>
+      <div class="winner-names">${winners.join(' y ')}</div>
+      <div class="winner-scenario">${sc.t}</div>
+      <div class="winner-pot">${share}€ cada uno</div>`;
   }
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 /* ── JUEGOS ── */
