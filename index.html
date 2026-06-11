@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#111111">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Desfase">
+  <meta name="description" content="La app del desfase — casa rural ASIR 2026">
+  <title>App del Desfase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #111111;
+      --surface:    #1C1C1C;
+      --surface2:   #252525;
+      --border:     rgba(255,255,255,0.08);
+      --border2:    rgba(255,255,255,0.15);
+      --text:       #F2F2F2;
+      --text2:      #888888;
+      --text3:      #555555;
+      --accent:     #FF4500;
+      --accent-dim: rgba(255,69,0,0.15);
+      --gold:       #FFD000;
+      --gold-dim:   rgba(255,208,0,0.12);
+      --green:      #22C55E;
+      --green-dim:  rgba(34,197,94,0.12);
+      --blue:       #3B82F6;
+      --blue-dim:   rgba(59,130,246,0.12);
+      --purple:     #A855F7;
+      --purple-dim: rgba(168,85,247,0.12);
+      --pink:       #EC4899;
+      --pink-dim:   rgba(236,72,153,0.12);
+      --radius:     12px;
+      --radius-sm:  8px;
+      --nav-h:      64px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .topbar h1 {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .topbar h1 span { color: var(--accent); }
+    .topbar p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+    /* ── PLAYERS ── */
+    .players-bar {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .add-row { display: flex; gap: 8px; }
+    .add-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      padding: 9px 12px;
+      outline: none;
+      min-width: 0;
+    }
+    .add-row input::placeholder { color: var(--text3); }
+    .add-row input:focus { border-color: var(--accent); }
+    .add-row button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 9px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .add-row button:active { opacity: 0.85; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 4px 10px 4px 12px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .chip-del {
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px calc(var(--nav-h) + 20px);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: var(--nav-h);
+      background: var(--surface);
+      border-top: 1px solid var(--border2);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text3);
+      font-size: 11px;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s;
+    }
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ── SECTIONS ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .sec-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    /* ── RETOS ── */
+    .spin-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 800;
+      font-family: 'Syne', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.3px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .spin-btn:active { transform: scale(0.98); opacity: 0.9; }
+    .spin-ico { font-size: 20px; display: inline-block; }
+    .spin-ico.go { animation: roll .45s ease-out; }
+    @keyframes roll { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+    .spin-result {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 10px;
+      display: none;
+    }
+    .spin-result.show {
+      display: block;
+      animation: pop .2s ease-out;
+    }
+    @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .spin-who { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+    .spin-text { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--text); }
+    .spin-tag { margin-top: 10px; }
+
+    .reto-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .reto-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .reto-body { flex: 1; min-width: 0; }
+    .reto-txt { font-size: 13px; line-height: 1.5; color: var(--text); }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+
+    /* ── PORRA ── */
+    .fianza-hero {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .fianza-lbl { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+    .fianza-amt {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 44px;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1.1;
+      margin: 6px 0 4px;
+    }
+    .fianza-sub { font-size: 13px; color: var(--text2); }
+
+    .hint-box {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 14px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border-left: 3px solid var(--gold);
+    }
+    .hint-box strong { color: var(--text); font-weight: 600; }
+
+    .pchips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pchip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text2);
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pchip.sel {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .active-lbl {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .active-lbl strong { color: var(--text); font-weight: 600; }
+
+    .scenario {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 8px;
+    }
+    .s-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .s-txt { font-size: 13px; line-height: 1.4; color: var(--text); }
+    .s-mult {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .s-bot { display: flex; align-items: center; gap: 10px; }
+    .s-bot input {
+      width: 58px;
+      padding: 7px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      text-align: center;
+      outline: none;
+    }
+    .s-bot input:focus { border-color: var(--accent); }
+    .s-bot input:disabled { opacity: 0.3; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .s-total { font-size: 12px; color: var(--text2); }
+    .pbar { height: 3px; background: var(--surface2); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .pfill { height: 100%; border-radius: 2px; background: var(--gold); transition: width .3s; }
+
+    .confirm-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .confirm-btn:active { opacity: 0.8; }
+
+    /* ── JUEGOS ── */
+    .juego-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .juego-hdr {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .juego-left { display: flex; align-items: center; gap: 12px; }
+    .juego-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .juego-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .juego-right { display: flex; align-items: center; gap: 8px; }
+    .jbadge { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+    .chevron {
+      display: inline-block;
+      font-size: 18px;
+      color: var(--text3);
+      transition: transform 0.25s;
+      line-height: 1;
+    }
+    .chevron.open { transform: rotate(180deg); }
+    .juego-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .juego-body.open { max-height: 600px; }
+    .juego-inner {
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .juego-rules {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    .juego-tips { list-style: none; padding: 0; }
+    .juego-tips li {
+      font-size: 12px;
+      color: var(--text3);
+      line-height: 1.7;
+      padding-left: 16px;
+      position: relative;
+    }
+    .juego-tips li::before { content: '→'; position: absolute; left: 0; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 16px);
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-size: 14px;
+      color: var(--text);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .2s, transform .2s;
+      z-index: 200;
+      pointer-events: none;
+      max-width: calc(100vw - 40px);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── EMPTY ── */
+    .empty { font-size: 13px; color: var(--text3); padding: 4px 0; }
+
+    /* ── SYNC STATUS ── */
+    .sync-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text3);
+      margin-bottom: 14px;
+    }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .sync-dot.online  { background: #22C55E; }
+    .sync-dot.syncing { background: var(--gold); animation: pulse .8s ease infinite; }
+    .sync-dot.offline { background: #FF4500; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    /* ── LOGIN ── */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .login-title {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .login-title span { color: var(--accent); }
+    .login-sub {
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 28px;
+    }
+    .login-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .user-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .user-btn {
+      padding: 12px 6px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      text-align: center;
+    }
+    .user-btn:active { transform: scale(0.96); }
+    .user-btn.sel {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .login-pass-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .login-pass-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      padding: 12px 14px;
+      outline: none;
+      letter-spacing: 0.1em;
+    }
+    .login-pass-row input::placeholder { color: var(--text3); letter-spacing: 0; }
+    .login-pass-row input:focus { border-color: var(--accent); }
+    .login-enter {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Syne', system-ui, sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .login-enter:active { opacity: 0.85; transform: scale(0.97); }
+    .login-error {
+      font-size: 13px;
+      color: #FF4500;
+      min-height: 20px;
+      text-align: center;
+    }
+    .login-error.shake {
+      animation: shake .35s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+  </style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-title">App del <span>Desfase</span> 🔥</div>
+    <div class="login-sub">Identifícate para entrar</div>
+    <div class="login-label">¿Quién eres?</div>
+    <div class="user-grid" id="userGrid"></div>
+    <div class="login-label">Contraseña</div>
+    <div class="login-pass-row">
+      <input type="password" id="passInput" placeholder="••••••••" autocomplete="off" />
+      <button class="login-enter" onclick="tryLogin()">Entrar →</button>
+    </div>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <h1>App del <span>Desfase</span> 🔥</h1>
+    <p>Graduados ASIR 2026 — casa rural edition</p>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="players-bar">
+    <div class="add-row">
+      <input type="text" id="pinput" placeholder="Añadir jugador..." autocomplete="off" autocorrect="off" />
+      <button onclick="addPlayer()">+ Añadir</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- RETOS -->
+    <div id="sec-retos" class="section active">
+      <button class="spin-btn" onclick="spinReto()">
+        <span class="spin-ico" id="spinIco">🎲</span>
+        RULETA DE RETOS
+      </button>
+      <div class="spin-result" id="spinResult">
+        <div class="spin-who" id="spinWho"></div>
+        <div class="spin-text" id="spinText"></div>
+        <div class="spin-tag" id="spinTag"></div>
+      </div>
+      <div class="sec-label" style="margin-top:20px">Todos los retos (18)</div>
+      <div id="retosList"></div>
+    </div>
+
+    <!-- PORRA -->
+    <div id="sec-porra" class="section">
+      <div class="fianza-hero">
+        <div class="fianza-lbl">Fianza en juego</div>
+        <div class="fianza-amt">300€</div>
+        <div class="fianza-sub">¿Cómo la vais a perder?</div>
+      </div>
+      <div class="sync-bar">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncTxt">Conectando...</span>
+      </div>
+      <div class="hint-box">
+        Cada jugador reparte <strong>10 fichas</strong> entre los escenarios que cree que van a ocurrir.<br>
+        El que más acierte gana gloria eterna (y posiblemente pagar menos).
+      </div>
+      <div class="sec-label">¿Quién apuesta?</div>
+      <div class="pchips" id="porraPlayers"><span class="empty">Añade jugadores arriba primero</span></div>
+      <div class="active-lbl" id="activeLbl">
+        <span>👤</span><span>Selecciona un jugador para apostar</span>
+      </div>
+      <div id="scenariosList"></div>
+      <button class="confirm-btn" onclick="confirmBets()">✓ Confirmar apuestas</button>
+    </div>
+
+    <!-- JUEGOS -->
+    <div id="sec-juegos" class="section">
+      <div class="sec-label">Juegos del alcohol (6)</div>
+      <div id="juegosList"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-retos" onclick="switchTab('retos')">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="2"/><rect x="13" y="2" width="9" height="9" rx="2"/><rect x="2" y="13" width="9" height="9" rx="2"/><rect x="13" y="13" width="9" height="9" rx="2"/></svg>
+      Retos
+    </button>
+    <button class="nav-btn" id="nav-porra" onclick="switchTab('porra')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 9h.01M9.5 15a3.5 3.5 0 0 0 5 0"/></svg>
+      Fianza
+    </button>
+    <button class="nav-btn" id="nav-juegos" onclick="switchTab('juegos')">
+      <svg viewBox="0 0 24 24"><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/></svg>
+      Juegos
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── DATA ── */
+const RETOS = [
+  {t:"Meterte en el jacuzzi vestido/a completo durante 3 minutos sin quitarte nada",n:"Medio",tag:"Jacuzzi",c:"#A855F7",bg:"rgba(168,85,247,0.12)"},
+  {t:"Saltar a la piscina desde el punto más alto disponible (sin que nadie te empuje)",n:"Alto",tag:"Piscina",c:"#3B82F6",bg:"rgba(59,130,246,0.12)"},
+  {t:"Comer una cucharada entera de mostaza sin hacer ni un gesto",n:"Medio",tag:"BBQ",c:"#FF4500",bg:"rgba(255,69,0,0.12)"},
+  {t:"Llamar al contacto número 7 de tu móvil y cantarle cumpleaños feliz hasta el final",n:"Social",tag:"Móvil",c:"#22C55E",bg:"rgba(34,197,94,0.12)"},
+  {t:"Imitar al profe de Redes o Seguridad durante 2 minutos mientras el resto adivina quién es",n:"Fácil",tag:"Teatro",c:"#EC4899",bg:"rgba(236,72,153,0.12)"},
+  {t:"Meterte en la sauna con ropa de calle durante 5 minutos completos sin quitarte nada",n:"Extremo",tag:"Sauna",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
+  {t:"Hacer 30 sentadillas en bañador en el jardín cantando el himno de España",n:"Medio",tag:"Jardín",c:"#22C55E",bg:"rgba(34,197,94,0.12)"},
+  {t:"Publicar una historia en Instagram con el filtro y el texto que decidan los demás",n:"Social",tag:"Redes",c:"#EC4899",bg:"rgba(236,72,153,0.12)"},
+  {t:"45 minutos sin tocar el móvil. Si fallas: pagas el siguiente pack de bebida",n:"Extremo",tag:"Penitencia",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
+  {t:"Foto en la BBQ con delantal y sin camisa mandada al grupo de clase (da igual el género)",n:"Social",tag:"BBQ",c:"#FF4500",bg:"rgba(255,69,0,0.12)"},
+  {t:"Sumergirte entero en la piscina y contar hasta 10 en voz alta bajo el agua",n:"Medio",tag:"Piscina",c:"#3B82F6",bg:"rgba(59,130,246,0.12)"},
+  {t:"Servir bebidas a todos los jugadores en bandeja sin derramar nada. Si derramas: shot doble",n:"Fácil",tag:"Camarero",c:"#22C55E",bg:"rgba(34,197,94,0.12)"},
+  {t:"Discurso de agradecimiento de 1 minuto llorando como si ganaras un Oscar",n:"Fácil",tag:"Teatro",c:"#A855F7",bg:"rgba(168,85,247,0.12)"},
+  {t:"Tirarte al agua vestido/a contando atrás desde 5 tú solo, sin empuje de nadie",n:"Alto",tag:"Piscina",c:"#3B82F6",bg:"rgba(59,130,246,0.12)"},
+  {t:"Contar tu peor anécdota del ciclo con todos los detalles. Sin censura.",n:"Social",tag:"Confesión",c:"#EC4899",bg:"rgba(236,72,153,0.12)"},
+  {t:"Reto sauna encadenado: aguantar 2 minutos más que el récord del grupo",n:"Extremo",tag:"Sauna",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
+  {t:"Mandar una foto haciendo una peineta al grupo de profesores del ciclo",n:"Extremo",tag:"Penitencia",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
+  {t:"Comerte lo que el jugador de tu izquierda prepare en la BBQ sin protestar",n:"Medio",tag:"BBQ",c:"#FF4500",bg:"rgba(255,69,0,0.12)"},
+];
+
+const SCENARIOS = [
+  {id:1,t:"Manchar el sofá con salsa de BBQ",m:"×2"},
+  {id:2,t:"Romper algo en la cocina (vaso, plato, lo que sea)",m:"×1.5"},
+  {id:3,t:"Dejar el jacuzzi con el agua turbia o verdosa",m:"×3"},
+  {id:4,t:"Bloquear el desagüe de la piscina",m:"×4"},
+  {id:5,t:"Quemar algo en la barbacoa que no debería quemarse",m:"×2.5"},
+  {id:6,t:"Inundar el baño por duchas o jacuzzi",m:"×2"},
+  {id:7,t:"Perder la llave de entrada de la casa",m:"×3"},
+  {id:8,t:"Dejar el jardín hecho una ruina absoluta",m:"×2"},
+  {id:9,t:"Rayar o romper mobiliario (silla, mesa, cama...)",m:"×2.5"},
+  {id:10,t:"La fianza llega intacta — no perdéis nada",m:"×5"},
+];
+
+const JUEGOS = [
+  {e:"✋",n:"Yo nunca",b:"Clásico",bc:"#22C55E",bb:"rgba(34,197,94,0.12)",
+   r:"Cada jugador dice 'Yo nunca he...' y quien SÍ lo haya hecho bebe. Si más de la mitad bebe, el que lo dijo también.",
+   t:["Ideal para arrancar la noche y romper el hielo","Usa frases del ciclo: 'Yo nunca he suspendido Redes'","Si nadie bebe, el que lo dijo hace un shot"]},
+  {e:"🚌",n:"Bus Driver",b:"Con cartas",bc:"#A855F7",bb:"rgba(168,85,247,0.12)",
+   r:"Un 'conductor' recibe 5 cartas. Adivina: ¿roja o negra? ¿más alta o baja? ¿dentro o fuera? ¿palo? Si falla, bebe el número de cartas en mesa y vuelve a empezar.",
+   t:["El conductor no cambia hasta que acierte las 4 en fila","Versión extreme: doble en el último turno","El palo es la más difícil — reserva el bluf para aquí"]},
+  {e:"🎲",n:"Verdad, Reto o Shot",b:"Social",bc:"#EC4899",bb:"rgba(236,72,153,0.12)",
+   r:"Por turnos elige: Verdad (pregunta comprometida), Reto (usa la ruleta de esta app) o Shot (un shot sin preguntas ni drama).",
+   t:["El grupo puede vetar una verdad si es muy fácil","Rechazar un reto = shot doble automático","En casa rural los retos son de piscina, sauna o BBQ"]},
+  {e:"👑",n:"El Rey",b:"Con cartas",bc:"#FFD000",bb:"rgba(255,208,0,0.1)",
+   r:"Baraja boca abajo en el centro. As=regla nueva, 2=tú, 3=yo, 4=chicas, 5=manos, 6=chicos, 7=cielo, 8=pareja, 9=rima, 10=categoría, J=yo nunca, Q=preguntas, K=vierte en el vaso del rey.",
+   t:["El 4º Rey bebe el vaso del rey entero — nadie quiere ser el 4º","Las reglas del As se acumulan toda la partida","Muy recomendable para la primera noche"]},
+  {e:"🎓",n:"Bebe si... (Edición ASIR)",b:"Especial",bc:"#3B82F6",bb:"rgba(59,130,246,0.12)",
+   r:"Bebe si: copiaste en un examen, llegaste tarde a la FCT, pasaste una asignatura con un 5.0 exacto, te quedaste dormido en clase, mandaste un mensaje al grupo equivocado.",
+   t:["Añade los tuyos propios en el grupo antes de salir","El que más beba prepara las hamburguesas","Combínalo con Yo Nunca para más variedad"]},
+  {e:"🔫",n:"Ruleta de shots",b:"Peligroso",bc:"#FF4500",bb:"rgba(255,69,0,0.12)",
+   r:"Pon N vasos boca abajo, solo uno tiene bebida. Giráis una botella — quien señale levanta un vaso. Shot si hay bebida, turno pasa si no.",
+   t:["Mezcla diferentes bebidas para más morbo","Sube la dificultad poniendo más vasos con bebida","El último vaso que quede lo bebe el que más tarde en pillarlo"]},
+];
+
+/* ────────────────────────────────────────────────
+   FIREBASE CONFIG
+   1. Ve a console.firebase.google.com
+   2. Crea un proyecto (gratis)
+   3. Añade una app web → copia el objeto firebaseConfig
+   4. Ve a Realtime Database → Crear base de datos (modo prueba)
+   5. Pega los valores aquí y haz push al repo
+   ──────────────────────────────────────────────── */
+const FB_CONFIG = {
+  apiKey:            "AIzaSyAlpDIuzQMvUgo0L2Gqx8A-_5JQYfOfuac",
+  authDomain:        "app-del-desfase.firebaseapp.com",
+  databaseURL:       "https://app-del-desfase-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "app-del-desfase",
+  storageBucket:     "app-del-desfase.firebasestorage.app",
+  messagingSenderId: "509172283140",
+  appId:             "1:509172283140:web:609bf7f9523254ce9b8251",
+};
+
+let db = null;
+try {
+  if (FB_CONFIG.apiKey !== "PEGAR_AQUI") {
+    firebase.initializeApp(FB_CONFIG);
+    db = firebase.database();
+  }
+} catch(e) { console.warn('Firebase init error:', e); }
+
+function setSyncStatus(state) {
+  // state: 'online' | 'syncing' | 'offline' | 'off'
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + (state === 'off' ? '' : state);
+  const labels = {
+    online:  'Apuestas sincronizadas en tiempo real',
+    syncing: 'Guardando...',
+    offline: 'Sin conexión — los cambios se perderán',
+    off:     'Firebase no configurado — modo local',
+  };
+  txt.textContent = labels[state] || '';
+}
+
+/* ── LOGIN ── */
+const VALID_USERS = ['Miguel', 'Germán', 'Fabián', 'Diego', 'Alejandro', 'Javi'];
+const PASSWORD    = 'clave$1';
+let loginUser     = null;
+
+(function initLogin() {
+  document.getElementById('userGrid').innerHTML = VALID_USERS.map(u =>
+    `<button class="user-btn" id="ubtn-${u}" onclick="selectUser('${u}')">${u}</button>`
+  ).join('');
+  document.getElementById('passInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+})();
+
+function selectUser(n) {
+  loginUser = n;
+  VALID_USERS.forEach(u => {
+    document.getElementById('ubtn-' + u).classList.toggle('sel', u === n);
+  });
+}
+
+function tryLogin() {
+  const pass = document.getElementById('passInput').value;
+  if (!loginUser) { showLoginError('Selecciona tu nombre primero'); return; }
+  if (pass !== PASSWORD) {
+    showLoginError('Contraseña incorrecta 🚫');
+    document.getElementById('passInput').value = '';
+    return;
+  }
+
+  /* Acceso correcto */
+  document.getElementById('loginScreen').style.display = 'none';
+
+  /* Registrar al jugador */
+  if (!players.includes(loginUser)) {
+    players.push(loginUser);
+    if (!bets[loginUser]) bets[loginUser] = {};
+    renderChips();
+  }
+
+  /* Conectar a Firebase o caer en modo local */
+  if (db) {
+    setSyncStatus('syncing');
+
+    /* Escuchar TODOS los cambios de apuestas en tiempo real */
+    db.ref('desfase/bets').on('value', snap => {
+      const data = snap.val() || {};
+
+      /* Sincronizar jugadores conocidos */
+      Object.keys(data).forEach(player => {
+        if (!players.includes(player)) {
+          players.push(player);
+          renderChips();
+        }
+        bets[player] = {};
+        Object.keys(data[player] || {}).forEach(id => {
+          bets[player][Number(id)] = data[player][id];
+        });
+      });
+
+      /* Asegurar que el jugador local existe */
+      if (!bets[loginUser]) bets[loginUser] = {};
+      renderPorraPlayers();
+      renderScenarios();
+      setSyncStatus('online');
+    });
+
+    /* Detectar desconexión */
+    db.ref('.info/connected').on('value', snap => {
+      if (!snap.val()) setSyncStatus('offline');
+    });
+
+  } else {
+    setSyncStatus('off');
+    renderPorraPlayers();
+    renderScenarios();
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+
+/* ── STATE ── */
+let players = [];
+let currentPlayer = null;
+let bets = {}; // { name: { scenarioId: fichas } }
+
+/* ── PLAYERS ── */
+function addPlayer() {
+  const inp = document.getElementById('pinput');
+  const n = inp.value.trim();
+  if (!n || players.includes(n)) { inp.value = ''; return; }
+  players.push(n);
+  bets[n] = {};
+  inp.value = '';
+  renderChips();
+  renderPorraPlayers();
+}
+
+function removePlayer(n) {
+  players = players.filter(p => p !== n);
+  delete bets[n];
+  if (currentPlayer === n) currentPlayer = null;
+  renderChips();
+  renderPorraPlayers();
+}
+
+function renderChips() {
+  document.getElementById('chips').innerHTML =
+    players.map(p =>
+      `<div class="chip">${p}<button class="chip-del" onclick="removePlayer('${p}')" aria-label="Eliminar ${p}">×</button></div>`
+    ).join('');
+}
+
+/* ── NAVIGATION ── */
+function switchTab(tab) {
+  ['retos','porra','juegos'].forEach(t => {
+    document.getElementById('sec-' + t).classList.toggle('active', t === tab);
+    document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'porra') { renderPorraPlayers(); renderScenarios(); }
+}
+
+/* ── SPIN ── */
+function spinReto() {
+  const r = RETOS[Math.floor(Math.random() * RETOS.length)];
+  const victim = players.length > 0 ? players[Math.floor(Math.random() * players.length)] : null;
+
+  const ico = document.getElementById('spinIco');
+  ico.classList.remove('go');
+  void ico.offsetWidth;
+  ico.classList.add('go');
+  setTimeout(() => ico.classList.remove('go'), 450);
+
+  document.getElementById('spinWho').textContent = victim ? `🎯 Le toca a: ${victim}` : '🎯 Añade jugadores para asignar víctima';
+  document.getElementById('spinText').textContent = r.t;
+  document.getElementById('spinTag').innerHTML =
+    `<span class="badge" style="background:${r.bg};color:${r.c}">${r.tag} — Nivel ${r.n}</span>`;
+
+  const res = document.getElementById('spinResult');
+  res.classList.remove('show');
+  void res.offsetWidth;
+  res.classList.add('show');
+}
+
+/* ── RETOS LIST ── */
+function renderRetos() {
+  document.getElementById('retosList').innerHTML = RETOS.map(r =>
+    `<div class="reto-card">
+      <div class="reto-dot" style="background:${r.c}"></div>
+      <div class="reto-body">
+        <div class="reto-txt">${r.t}</div>
+        <span class="badge" style="background:${r.bg};color:${r.c}">${r.tag} — ${r.n}</span>
+      </div>
+    </div>`
+  ).join('');
+}
+
+/* ── PORRA ── */
+function renderPorraPlayers() {
+  const c = document.getElementById('porraPlayers');
+  if (players.length === 0) {
+    c.innerHTML = `<span class="empty">Añade jugadores arriba primero</span>`;
+    return;
+  }
+  c.innerHTML = players.map(p =>
+    `<div class="pchip${currentPlayer === p ? ' sel' : ''}" onclick="selectPlayer('${p}')">${p}</div>`
+  ).join('');
+}
+
+function fichasLeft(n) {
+  return 10 - Object.values(bets[n] || {}).reduce((a, b) => a + b, 0);
+}
+
+function selectPlayer(n) {
+  currentPlayer = n;
+  renderPorraPlayers();
+  document.getElementById('activeLbl').innerHTML =
+    `<span>👤</span><span>Apuestas de <strong>${n}</strong> — fichas: <strong id="fichasLeft" style="color:var(--accent)">${fichasLeft(n)}</strong>/10</span>`;
+  renderScenarios();
+}
+
+function renderScenarios() {
+  const total = Math.max(players.length * 10, 10);
+  document.getElementById('scenariosList').innerHTML = SCENARIOS.map(s => {
+    const cur = currentPlayer ? (bets[currentPlayer][s.id] || 0) : 0;
+    const tot = players.reduce((sum, p) => sum + (bets[p][s.id] || 0), 0);
+    const pct = Math.round((tot / total) * 100);
+    return `<div class="scenario">
+      <div class="s-top">
+        <div class="s-txt">${s.t}</div>
+        <div class="s-mult">${s.m}</div>
+      </div>
+      <div class="s-bot">
+        <input type="number" min="0" max="10" value="${cur}"
+          ${!currentPlayer ? 'disabled' : ''}
+          onchange="updateBet(${s.id}, this.value)" />
+        <span class="s-total">${tot} fichas apostadas</span>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function updateBet(id, val) {
+  if (!currentPlayer) return;
+  const v = Math.max(0, Math.min(10, parseInt(val) || 0));
+  bets[currentPlayer][id] = v;
+
+  /* Actualizar contador local inmediatamente */
+  const el = document.getElementById('fichasLeft');
+  if (el) el.textContent = Math.max(0, fichasLeft(currentPlayer));
+
+  /* Escribir en Firebase si está configurado */
+  if (db) {
+    setSyncStatus('syncing');
+    db.ref(`desfase/bets/${currentPlayer}/${id}`).set(v)
+      .then(() => setSyncStatus('online'))
+      .catch(() => setSyncStatus('offline'));
+  } else {
+    renderScenarios();
+  }
+}
+
+function confirmBets() {
+  if (!currentPlayer) { toast('Selecciona un jugador primero'); return; }
+  const r = fichasLeft(currentPlayer);
+  if (r < 0) { toast('Te pasaste de fichas — máximo 10'); return; }
+  if (db) {
+    /* Escribir el objeto completo de este jugador de una vez */
+    setSyncStatus('syncing');
+    db.ref(`desfase/bets/${currentPlayer}`).set(bets[currentPlayer] || {})
+      .then(() => { setSyncStatus('online'); toast(`✓ Apuestas de ${currentPlayer} guardadas`); })
+      .catch(() => { setSyncStatus('offline'); toast('Error al guardar — sin conexión'); });
+  } else {
+    toast(`✓ Apuestas de ${currentPlayer} guardadas (modo local)`);
+  }
+}
+
+/* ── JUEGOS ── */
+function renderJuegos() {
+  document.getElementById('juegosList').innerHTML = JUEGOS.map((j, i) =>
+    `<div class="juego-card">
+      <div class="juego-hdr" onclick="toggleJuego(${i})">
+        <div class="juego-left">
+          <div class="juego-ico" style="background:${j.bb}">${j.e}</div>
+          <div class="juego-name">${j.n}</div>
+        </div>
+        <div class="juego-right">
+          <span class="jbadge" style="background:${j.bb};color:${j.bc}">${j.b}</span>
+          <span class="chevron" id="ch${i}">▾</span>
+        </div>
+      </div>
+      <div class="juego-body" id="jb${i}">
+        <div class="juego-inner">
+          <p class="juego-rules">${j.r}</p>
+          <ul class="juego-tips">${j.t.map(tip => `<li>${tip}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function toggleJuego(i) {
+  document.getElementById('jb' + i).classList.toggle('open');
+  document.getElementById('ch' + i).classList.toggle('open');
+}
+
+/* ── TOAST ── */
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ── INIT ── */
+renderRetos();
+renderJuegos();
+renderScenarios();
+
+document.getElementById('pinput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addPlayer();
+});
+</script>
+</body>
+</html>
