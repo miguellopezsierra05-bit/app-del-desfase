@@ -916,6 +916,14 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ── ESTADO GLOBAL (declarado al inicio para evitar Temporal Dead Zone) ── */
+const PLAYERS = ['Miguel', 'Fabián', 'Germán', 'Alejandro', 'Diego', 'Javi'];
+let currentPlayer = null;
+let betsList = []; // [{ key, player, scenarioId, amount:1, timestamp }]
+let db = null;
+let loginUser = null;
+let listenerSetUp = false;
+
 /* ── DATA ── */
 const RETOS = [
   {t:"Meterte en el jacuzzi vestido/a completo durante 3 minutos sin quitarte nada",n:"Medio",tag:"Jacuzzi",c:"#A855F7",bg:"rgba(168,85,247,0.12)"},
@@ -990,7 +998,6 @@ const FB_CONFIG = {
   appId:             "1:509172283140:web:609bf7f9523254ce9b8251",
 };
 
-let db = null;
 try {
   if (FB_CONFIG.apiKey !== "PEGAR_AQUI") {
     firebase.initializeApp(FB_CONFIG);
@@ -1016,8 +1023,6 @@ function setSyncStatus(state) {
 /* ── LOGIN ── */
 const VALID_USERS = ['Miguel', 'Fabián', 'Germán', 'Alejandro', 'Diego', 'Javi'];
 const PASSWORD    = 'clave$1';
-let loginUser     = null;
-let listenerSetUp = false;
 
 document.getElementById('passInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') tryLogin();
@@ -1088,12 +1093,7 @@ function showLoginError(msg) {
   el.classList.add('shake');
 }
 
-/* ── STATE ── */
-const PLAYERS = ['Miguel', 'Fabián', 'Germán', 'Alejandro', 'Diego', 'Javi'];
-let currentPlayer = null;
-let betsList = []; // [{ key, player, scenarioId, amount:1, timestamp }]
-
-/* ── NAVIGATION ── */
+/* ── NAVEGACIÓN ── */
 function switchTab(tab) {
   ['retos','porra','juegos'].forEach(t => {
     document.getElementById('sec-' + t).classList.toggle('active', t === tab);
@@ -1234,23 +1234,18 @@ function renderScenarios() {
 function placeBet(scenarioId) {
   if (!currentPlayer) { toast('Inicia sesión primero'); return; }
   if (creditsLeft(currentPlayer) <= 0) { toast('Sin créditos — ya apostaste tus 2€'); return; }
-  const bet     = { player: currentPlayer, scenarioId, amount: 1, timestamp: Date.now() };
-  const tempKey = 'temp_' + Date.now();
-
-  /* Actualización optimista local — responde inmediatamente sin esperar a Firebase */
-  betsList.push({ key: tempKey, ...bet });
-  renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
+  const bet = { player: currentPlayer, scenarioId, amount: 1, timestamp: Date.now() };
 
   if (db) {
+    /* Firebase es la fuente de verdad: el listener repinta solo al confirmar */
     setSyncStatus('syncing');
     db.ref('desfase/bets').push(bet)
       .then(() => setSyncStatus('online'))
-      .catch(() => {
-        betsList = betsList.filter(b => b.key !== tempKey);
-        renderCreditsTable(); renderScenarios(); updatePot(); updateActiveLbl();
-        setSyncStatus('offline');
-        toast('Error al guardar la apuesta');
-      });
+      .catch(() => { setSyncStatus('offline'); toast('Error al guardar — sin conexión'); });
+  } else {
+    /* Modo local sin Firebase */
+    betsList.push({ key: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2), ...bet });
+    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
   }
 }
 
@@ -1259,7 +1254,7 @@ function deleteBet(key) {
     setSyncStatus('syncing');
     db.ref('desfase/bets/' + key).remove()
       .then(() => setSyncStatus('online'))
-      .catch(() => setSyncStatus('offline'));
+      .catch(() => { setSyncStatus('offline'); toast('Error al eliminar'); });
   } else {
     betsList = betsList.filter(b => b.key !== key);
     renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
@@ -1278,8 +1273,11 @@ function closeAdminModal() {
 }
 
 function confirmReset() {
-  const pass = document.getElementById('adminPassInput').value.trim();
-  if (pass !== 'M-1gu3l-2005') {
+  /* Normalizar: quitar espacios y caracteres invisibles que meten algunos teclados móviles */
+  const raw  = document.getElementById('adminPassInput').value;
+  const pass = raw.normalize('NFKC').replace(/[\u200B-\u200D\uFEFF\s]/g, '');
+  const ADMIN_PASS = 'M-1gu3l-2005';
+  if (pass !== ADMIN_PASS) {
     document.getElementById('adminPassErr').textContent = 'Contraseña incorrecta';
     document.getElementById('adminPassInput').value = '';
     document.getElementById('adminPassInput').focus();
@@ -1358,39 +1356,6 @@ function clearResult() {
   const banner = document.getElementById('winnerBanner');
   if (banner) banner.style.display = 'none';
   if (db) db.ref('desfase/result').remove();
-}
-
-function resetAll() {
-  const pass = prompt('Contraseña de administrador:');
-  if (pass === null) return;
-  if (pass !== 'M-1gu3l-2005') {
-    toast('Contraseña incorrecta 🚫');
-    return;
-  }
-  if (!confirm('¿Resetear TODO? Se borrarán todas las apuestas y el resultado para todos los jugadores.')) return;
-  if (db) {
-    setSyncStatus('syncing');
-    db.ref('desfase').remove()
-      .then(() => {
-        setSyncStatus('online');
-        betsList = [];
-        const banner = document.getElementById('winnerBanner');
-        if (banner) banner.style.display = 'none';
-        renderCreditsTable();
-        renderScenarios();
-        renderBetsList();
-        updatePot();
-        updateActiveLbl();
-        toast('✓ Todo reseteado');
-      })
-      .catch(() => setSyncStatus('offline'));
-  } else {
-    betsList = [];
-    const banner = document.getElementById('winnerBanner');
-    if (banner) banner.style.display = 'none';
-    renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
-    toast('✓ Todo reseteado (modo local)');
-  }
 }
 
 /* ── RENDERPORRAJUGADORES LEGACY (no usada, mantenida por compatibilidad) ── */
