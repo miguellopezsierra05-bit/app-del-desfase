@@ -788,6 +788,7 @@
       <div class="reveal-section">
         <div class="reveal-title">¿Ya ha pasado? Revela el ganador</div>
         <div class="reveal-grid" id="revealGrid"></div>
+        <button class="reveal-btn" style="margin-top:10px;color:var(--text3);border-color:var(--border)" onclick="clearResult()">🗑 Borrar resultado guardado</button>
       </div>
       <div id="winnerBanner" style="display:none"></div>
     </div>
@@ -1187,23 +1188,37 @@ function showWinner(id) {
   const banner      = document.getElementById('winnerBanner');
   if (!banner) return;
   banner.style.display = 'block';
+  const closeBtn = `<button onclick="document.getElementById('winnerBanner').style.display='none'"
+    style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1">×</button>`;
   if (winning.length === 0) {
-    banner.innerHTML = `<div class="winner-trophy">😬</div>
+    banner.innerHTML = `<div style="position:relative">${closeBtn}
+      <div class="winner-trophy">😬</div>
       <div class="winner-title">Nadie acertó</div>
-      <div class="no-winner">El bote de ${totalPot}€ queda para el grupo</div>`;
+      <div class="no-winner">El bote de ${totalPot}€ queda para el grupo</div></div>`;
   } else {
     const byPlayer = {};
     winning.forEach(b => { byPlayer[b.player] = (byPlayer[b.player] || 0) + (b.amount || 1); });
     const details = Object.entries(byPlayer)
       .map(([p, u]) => `<strong>${p}</strong>: ${((u / totalWinAmt) * totalPot).toFixed(2).replace('.00', '')}€`)
       .join('<br>');
-    banner.innerHTML = `<div class="winner-trophy">🏆</div>
+    banner.innerHTML = `<div style="position:relative">${closeBtn}
+      <div class="winner-trophy">🏆</div>
       <div class="winner-title">¡Escenario revelado!</div>
       <div class="winner-scenario">${sc.t}</div>
       <div class="winner-names" style="margin-top:10px;font-size:13px;line-height:2">${details}</div>
-      <div class="winner-pot">${totalPot}€ total</div>`;
+      <div class="winner-pot">${totalPot}€ total</div></div>`;
   }
+  banner.style.position = 'relative';
   banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function clearResult() {
+  if (!confirm('¿Borrar el resultado guardado? El banner desaparecerá para todos.')) return;
+  const banner = document.getElementById('winnerBanner');
+  if (banner) banner.style.display = 'none';
+  if (db) {
+    db.ref('desfase/result').remove();
+  }
 }
 
 /* ── RENDERPORRAJUGADORES LEGACY (no usada, mantenida por compatibilidad) ── */
