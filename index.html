@@ -1000,7 +1000,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v11</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v12</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1133,8 +1133,7 @@ let listenerSetUp = false;
 let chatMessages = [];      // [{key, player, text, to, timestamp}]
 let chatTarget = null;       // null = público, o nombre de jugador = susurro
 let chatFirstLoad = true;
-let lastSeenPublicCount = 0;
-let lastSeenWhisperCount = 0;
+let lastSeenChatTimestamp = 0; // se carga desde localStorage al hacer login
 let lastChatTimestamp = 0;
 let pendingAdminAction = 'porra'; // 'porra' | 'chat' — qué resetear tras introducir la contraseña
 
@@ -1270,6 +1269,9 @@ function tryLogin() {
   document.getElementById('loginScreen').style.display = 'none';
   currentPlayer = loginUser;
 
+  /* Cargar marca de "leído" del chat para este jugador (persiste entre sesiones) */
+  lastSeenChatTimestamp = loadChatSeenTimestamp();
+
   /* 1º: conectar a Firebase (solo la primera vez), ANTES de renderizar,
      para que un fallo de render nunca impida registrar el listener */
   if (db && !listenerSetUp) {
@@ -1343,32 +1345,26 @@ function tryLogin() {
         });
         chatMessages.sort((a, b) => a.timestamp - b.timestamp);
 
-        /* Públicos: vistos por todos. Susurros recibidos: dirigidos a mí, de otra persona */
-        const publicMsgs  = chatMessages.filter(m => m.to === null);
-        const whisperMsgs = chatMessages.filter(m => m.to === currentPlayer && m.player !== currentPlayer);
+        /* Públicos no leídos: a todos, posteriores a la última vez que abriste el chat.
+           Susurros no leídos: dirigidos a mí, de otra persona, posteriores a esa marca. */
+        const publicUnread  = chatMessages.some(m => m.to === null && m.timestamp > lastSeenChatTimestamp);
+        const whisperUnread = chatMessages.some(m =>
+          m.to === currentPlayer && m.player !== currentPlayer && m.timestamp > lastSeenChatTimestamp
+        );
 
-        if (chatFirstLoad) {
-          lastSeenPublicCount  = publicMsgs.length;
-          lastSeenWhisperCount = whisperMsgs.length;
-          chatFirstLoad = false;
-        }
-
-        const chatActive  = document.getElementById('sec-chat').classList.contains('active');
-        const dotPublic   = document.getElementById('chatDotPublic');
-        const dotWhisper  = document.getElementById('chatDotWhisper');
+        const chatActive = document.getElementById('sec-chat').classList.contains('active');
         if (chatActive) {
-          lastSeenPublicCount  = publicMsgs.length;
-          lastSeenWhisperCount = whisperMsgs.length;
-          dotPublic.classList.remove('show');
-          dotWhisper.classList.remove('show');
+          markChatRead();
         } else {
-          dotPublic.classList.toggle('show', publicMsgs.length > lastSeenPublicCount);
-          dotWhisper.classList.toggle('show', whisperMsgs.length > lastSeenWhisperCount);
+          document.getElementById('chatDotPublic').classList.toggle('show', publicUnread);
+          document.getElementById('chatDotWhisper').classList.toggle('show', whisperUnread);
         }
 
-        /* Vibrar si llega un susurro nuevo dirigido a mí */
+        /* Vibrar si llega un susurro nuevo dirigido a mí (no en la primera carga) */
         const maxTs = chatMessages.length ? chatMessages[chatMessages.length - 1].timestamp : 0;
-        if (!chatFirstLoad && maxTs > lastChatTimestamp) {
+        if (chatFirstLoad) {
+          chatFirstLoad = false;
+        } else if (maxTs > lastChatTimestamp) {
           const newest = chatMessages[chatMessages.length - 1];
           if (newest.to === currentPlayer && newest.player !== currentPlayer && navigator.vibrate) {
             navigator.vibrate([60, 40, 60]);
@@ -1425,10 +1421,7 @@ function switchTab(tab) {
   });
   if (tab === 'porra') { renderCreditsTable(); renderScenarios(); renderBetsList(); }
   if (tab === 'chat') {
-    lastSeenPublicCount  = chatMessages.filter(m => m.to === null).length;
-    lastSeenWhisperCount = chatMessages.filter(m => m.to === currentPlayer && m.player !== currentPlayer).length;
-    document.getElementById('chatDotPublic').classList.remove('show');
-    document.getElementById('chatDotWhisper').classList.remove('show');
+    markChatRead();
     renderChatTargets();
     renderChat();
     scrollChatToBottom();
@@ -1692,21 +1685,15 @@ function resetChatData() {
       .then(() => {
         setSyncStatus('online');
         chatMessages = [];
-        lastSeenPublicCount = 0;
-        lastSeenWhisperCount = 0;
         chatFirstLoad = true;
-        document.getElementById('chatDotPublic').classList.remove('show');
-        document.getElementById('chatDotWhisper').classList.remove('show');
+        markChatRead();
         renderChat();
         toast('✓ Chat borrado');
       })
       .catch(() => setSyncStatus('offline'));
   } else {
     chatMessages = [];
-    lastSeenPublicCount = 0;
-    lastSeenWhisperCount = 0;
-    document.getElementById('chatDotPublic').classList.remove('show');
-    document.getElementById('chatDotWhisper').classList.remove('show');
+    markChatRead();
     renderChat();
     toast('✓ Chat borrado (modo local)');
   }
@@ -1769,6 +1756,29 @@ function clearResult() {
 function renderPorraPlayers() { renderCreditsTable(); }
 
 /* ── CHAT ── */
+
+/* Persistencia de "leído" por jugador (sobrevive a cerrar la app/recargar) */
+function chatSeenKey() {
+  return 'desfase_chat_seen_' + currentPlayer;
+}
+function loadChatSeenTimestamp() {
+  try {
+    const v = localStorage.getItem(chatSeenKey());
+    return v ? Number(v) : 0;
+  } catch (e) { return 0; }
+}
+function saveChatSeenTimestamp(ts) {
+  try { localStorage.setItem(chatSeenKey(), String(ts)); } catch (e) { /* ignorar */ }
+}
+function markChatRead() {
+  lastSeenChatTimestamp = Date.now();
+  saveChatSeenTimestamp(lastSeenChatTimestamp);
+  const dp = document.getElementById('chatDotPublic');
+  const dw = document.getElementById('chatDotWhisper');
+  if (dp) dp.classList.remove('show');
+  if (dw) dw.classList.remove('show');
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -1815,10 +1825,7 @@ function renderChat() {
   /* Si la pestaña de chat está activa, marcar como leído */
   const chatSection = document.getElementById('sec-chat');
   if (chatSection && chatSection.classList.contains('active')) {
-    lastSeenPublicCount  = chatMessages.filter(m => m.to === null).length;
-    lastSeenWhisperCount = chatMessages.filter(m => m.to === currentPlayer && m.player !== currentPlayer).length;
-    document.getElementById('chatDotPublic').classList.remove('show');
-    document.getElementById('chatDotWhisper').classList.remove('show');
+    markChatRead();
   }
 
   scrollChatToBottom();
