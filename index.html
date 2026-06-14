@@ -504,6 +504,19 @@
       color: var(--text3);
       margin-bottom: 14px;
     }
+    .chat-reset-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text3);
+      font-size: 13px;
+      padding: 4px 8px;
+      cursor: pointer;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chat-reset-btn:active { color: var(--accent); border-color: var(--accent); }
     .sync-dot {
       width: 7px;
       height: 7px;
@@ -987,7 +1000,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v9</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v10</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1052,6 +1065,7 @@
       <div class="sync-bar" style="margin-bottom:10px">
         <div class="sync-dot" id="chatSyncDot"></div>
         <span id="chatSyncTxt">Conectando...</span>
+        <button class="chat-reset-btn" onclick="resetChat()" aria-label="Resetear chat">🗑</button>
       </div>
       <div class="chat-list" id="chatList"></div>
       <div class="chat-target-row" id="chatTargetRow"></div>
@@ -1088,13 +1102,13 @@
 <!-- ADMIN RESET MODAL -->
 <div class="amodal-overlay" id="adminModal">
   <div class="amodal">
-    <h3>⚠️ Resetear todo</h3>
+    <h3 id="adminModalTitle">⚠️ Resetear todo</h3>
     <input type="password" id="adminPassInput" placeholder="Contraseña de admin..."
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
     <div class="amodal-err" id="adminPassErr"></div>
     <div class="amodal-btns">
       <button class="amodal-cancel" onclick="closeAdminModal()">Cancelar</button>
-      <button class="amodal-ok" onclick="confirmReset()">Resetear todo</button>
+      <button class="amodal-ok" onclick="confirmReset()">Resetear</button>
     </div>
   </div>
 </div>
@@ -1118,6 +1132,7 @@ let chatTarget = null;       // null = público, o nombre de jugador = susurro
 let chatFirstLoad = true;
 let lastSeenChatCount = 0;
 let lastChatTimestamp = 0;
+let pendingAdminAction = 'porra'; // 'porra' | 'chat' — qué resetear tras introducir la contraseña
 
 /* ── DATA ── */
 const RETOS = [
@@ -1598,6 +1613,17 @@ function deleteBet(key) {
 }
 
 function resetAll() {
+  pendingAdminAction = 'porra';
+  document.getElementById('adminModalTitle').textContent = '⚠️ Resetear todo';
+  document.getElementById('adminPassInput').value = '';
+  document.getElementById('adminPassErr').textContent = '';
+  document.getElementById('adminModal').classList.add('open');
+  setTimeout(() => document.getElementById('adminPassInput').focus(), 150);
+}
+
+function resetChat() {
+  pendingAdminAction = 'chat';
+  document.getElementById('adminModalTitle').textContent = '🗑️ Borrar todo el chat';
   document.getElementById('adminPassInput').value = '';
   document.getElementById('adminPassErr').textContent = '';
   document.getElementById('adminModal').classList.add('open');
@@ -1620,16 +1646,26 @@ function confirmReset() {
     return;
   }
   closeAdminModal();
+
+  if (pendingAdminAction === 'chat') {
+    resetChatData();
+  } else {
+    resetPorraData();
+  }
+}
+
+function resetPorraData() {
+  /* Solo borra apuestas + resultado, sin afectar al chat */
   if (db) {
     setSyncStatus('syncing');
-    db.ref('desfase').remove()
+    Promise.all([db.ref('desfase/bets').remove(), db.ref('desfase/result').remove()])
       .then(() => {
         setSyncStatus('online');
         betsList = [];
         const banner = document.getElementById('winnerBanner');
         if (banner) banner.style.display = 'none';
         renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
-        toast('✓ Todo reseteado');
+        toast('✓ Porra reseteada');
       })
       .catch(() => setSyncStatus('offline'));
   } else {
@@ -1637,7 +1673,29 @@ function confirmReset() {
     const banner = document.getElementById('winnerBanner');
     if (banner) banner.style.display = 'none';
     renderCreditsTable(); renderScenarios(); renderBetsList(); updatePot(); updateActiveLbl();
-    toast('✓ Todo reseteado (modo local)');
+    toast('✓ Porra reseteada (modo local)');
+  }
+}
+
+function resetChatData() {
+  /* Solo borra el chat, sin afectar a la porra */
+  if (db) {
+    setSyncStatus('syncing');
+    db.ref('desfase/chat').remove()
+      .then(() => {
+        setSyncStatus('online');
+        chatMessages = [];
+        lastSeenChatCount = 0;
+        chatFirstLoad = true;
+        renderChat();
+        toast('✓ Chat borrado');
+      })
+      .catch(() => setSyncStatus('offline'));
+  } else {
+    chatMessages = [];
+    lastSeenChatCount = 0;
+    renderChat();
+    toast('✓ Chat borrado (modo local)');
   }
 }
 
