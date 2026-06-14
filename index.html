@@ -565,6 +565,174 @@
     }
     .bet-del:active { color: var(--accent); }
 
+    /* ── CHAT ── */
+    .chat-section {
+      display: flex;
+      flex-direction: column;
+      height: calc(100dvh - var(--nav-h) - 80px);
+      padding-bottom: 0 !important;
+    }
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-empty {
+      font-size: 13px;
+      color: var(--text3);
+      text-align: center;
+      margin: auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .chat-msg {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.4;
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .chat-msg.mine {
+      align-self: flex-end;
+      background: var(--accent-dim);
+      border-color: rgba(255,69,0,0.3);
+    }
+    .chat-msg.whisper {
+      background: var(--purple-dim);
+      border-color: rgba(168,85,247,0.35);
+      border-style: dashed;
+    }
+    .chat-msg.whisper.mine {
+      background: var(--purple-dim);
+      border-color: rgba(168,85,247,0.5);
+    }
+    .chat-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 3px;
+      color: var(--accent);
+    }
+    .chat-msg.mine .chat-meta { color: var(--gold); justify-content: flex-end; }
+    .chat-msg.whisper .chat-meta { color: var(--purple); }
+    .chat-whisper-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: rgba(168,85,247,0.18);
+      color: var(--purple);
+    }
+    .chat-time {
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 400;
+      margin-left: auto;
+    }
+    .chat-msg.mine .chat-time { margin-left: 0; }
+    .chat-text { color: var(--text); word-break: break-word; }
+
+    /* Target selector */
+    .chat-target-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 0;
+      flex-shrink: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-target-chip {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text2);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .chat-target-chip.all-sel {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .chat-target-chip.whisper-sel {
+      background: var(--purple-dim);
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    /* Input row */
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 0 14px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 16px;
+      outline: none;
+    }
+    .chat-input-row input:focus { border-color: var(--accent); }
+    .chat-input-row input::placeholder { color: var(--text3); }
+    .chat-send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chat-send-btn:active { opacity: .85; transform: scale(0.96); }
+
+    /* Nav badge */
+    .nav-btn { position: relative; }
+    .chat-badge {
+      position: absolute;
+      top: 2px;
+      right: calc(50% - 22px);
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
     /* ── PORRA NEW ── */
     .scenario.mine { border-color: var(--accent); background: rgba(255,69,0,0.05); }
     .s-betters { font-size: 12px; color: var(--text2); margin: 6px 0 10px; min-height: 16px; }
@@ -819,7 +987,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v8</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v9</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -879,6 +1047,21 @@
       <div id="juegosList"></div>
     </div>
 
+    <!-- CHAT -->
+    <div id="sec-chat" class="section chat-section">
+      <div class="sync-bar" style="margin-bottom:10px">
+        <div class="sync-dot" id="chatSyncDot"></div>
+        <span id="chatSyncTxt">Conectando...</span>
+      </div>
+      <div class="chat-list" id="chatList"></div>
+      <div class="chat-target-row" id="chatTargetRow"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Escribe un mensaje..."
+          autocomplete="off" autocorrect="off" />
+        <button class="chat-send-btn" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+
   </div><!-- /content -->
 
   <!-- BOTTOM NAV -->
@@ -894,6 +1077,11 @@
     <button class="nav-btn" id="nav-juegos" onclick="switchTab('juegos')">
       <svg viewBox="0 0 24 24"><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><line x1="12" y1="12" x2="12" y2="17"/><line x1="9.5" y1="14.5" x2="14.5" y2="14.5"/></svg>
       Juegos
+    </button>
+    <button class="nav-btn" id="nav-chat" onclick="switchTab('chat')">
+      <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Chat
+      <span class="chat-badge" id="chatBadge" style="display:none"></span>
     </button>
   </nav>
 
@@ -923,6 +1111,13 @@ let betsList = []; // [{ key, player, scenarioId, amount:1, timestamp }]
 let db = null;
 let loginUser = null;
 let listenerSetUp = false;
+
+/* Chat */
+let chatMessages = [];      // [{key, player, text, to, timestamp}]
+let chatTarget = null;       // null = público, o nombre de jugador = susurro
+let chatFirstLoad = true;
+let lastSeenChatCount = 0;
+let lastChatTimestamp = 0;
 
 /* ── DATA ── */
 const RETOS = [
@@ -1110,8 +1305,73 @@ function tryLogin() {
       else setSyncStatus('online');
     });
 
+    /* ── CHAT LISTENER ── */
+    db.ref('desfase/chat').on('value', snap => {
+      try {
+        chatMessages = [];
+        const data = snap.val() || {};
+        Object.keys(data).forEach(key => {
+          const m = data[key];
+          if (m && m.player && m.text) {
+            chatMessages.push({
+              key,
+              player: m.player,
+              text: String(m.text),
+              to: m.to || null,
+              timestamp: Number(m.timestamp) || 0
+            });
+          }
+        });
+        chatMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+        const visible = getVisibleChatMessages();
+
+        if (chatFirstLoad) {
+          lastSeenChatCount = visible.length;
+          chatFirstLoad = false;
+        }
+
+        const chatActive = document.getElementById('sec-chat').classList.contains('active');
+        const badge = document.getElementById('chatBadge');
+        if (chatActive) {
+          lastSeenChatCount = visible.length;
+          badge.style.display = 'none';
+        } else {
+          const unread = Math.max(0, visible.length - lastSeenChatCount);
+          if (unread > 0) {
+            badge.textContent = unread > 9 ? '9+' : unread;
+            badge.style.display = 'flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+
+        /* Vibrar si llega un susurro nuevo dirigido a mí */
+        const maxTs = chatMessages.length ? chatMessages[chatMessages.length - 1].timestamp : 0;
+        if (!chatFirstLoad && maxTs > lastChatTimestamp) {
+          const newest = chatMessages[chatMessages.length - 1];
+          if (newest.to === currentPlayer && newest.player !== currentPlayer && navigator.vibrate) {
+            navigator.vibrate([60, 40, 60]);
+          }
+        }
+        lastChatTimestamp = maxTs;
+
+        renderChat();
+        document.getElementById('chatSyncDot').className = 'sync-dot online';
+        document.getElementById('chatSyncTxt').textContent = 'Chat sincronizado en tiempo real';
+      } catch (err) {
+        document.getElementById('chatSyncDot').className = 'sync-dot offline';
+        document.getElementById('chatSyncTxt').textContent = '⚠️ Error procesando chat: ' + (err.message || err);
+      }
+    }, err => {
+      document.getElementById('chatSyncDot').className = 'sync-dot offline';
+      document.getElementById('chatSyncTxt').textContent = '⚠️ Firebase no deja LEER el chat: ' + (err.code || err.message || err);
+    });
+
   } else if (!db) {
     setSyncStatus('off');
+    document.getElementById('chatSyncDot').className = '';
+    document.getElementById('chatSyncTxt').textContent = 'Firebase no configurado — chat solo local';
   }
 
   /* 2º: renderizar con el usuario actual */
@@ -1121,6 +1381,8 @@ function tryLogin() {
     renderBetsList();
     updatePot();
     updateActiveLbl();
+    renderChatTargets();
+    renderChat();
   } catch (err) {
     syncErrorMsg = '⚠️ Error de render: ' + (err.message || err);
     setSyncStatus('offline');
@@ -1137,11 +1399,18 @@ function showLoginError(msg) {
 
 /* ── NAVEGACIÓN ── */
 function switchTab(tab) {
-  ['retos','porra','juegos'].forEach(t => {
+  ['retos','porra','juegos','chat'].forEach(t => {
     document.getElementById('sec-' + t).classList.toggle('active', t === tab);
     document.getElementById('nav-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'porra') { renderCreditsTable(); renderScenarios(); renderBetsList(); }
+  if (tab === 'chat') {
+    unreadWhispers = 0;
+    document.getElementById('chatBadge').style.display = 'none';
+    renderChatTargets();
+    renderChat();
+    scrollChatToBottom();
+  }
 }
 
 /* ── SPIN ── */
@@ -1428,6 +1697,104 @@ function clearResult() {
 /* ── RENDERPORRAJUGADORES LEGACY (no usada, mantenida por compatibilidad) ── */
 function renderPorraPlayers() { renderCreditsTable(); }
 
+/* ── CHAT ── */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getVisibleChatMessages() {
+  /* Ves un mensaje si es público (to=null), si te lo susurran a ti,
+     o si tú eres quien lo envió (susurros propios) */
+  return chatMessages.filter(m =>
+    m.to === null || m.to === currentPlayer || m.player === currentPlayer
+  );
+}
+
+function renderChat() {
+  const list = document.getElementById('chatList');
+  if (!list) return;
+  const visible = getVisibleChatMessages();
+
+  if (visible.length === 0) {
+    list.innerHTML = `<div class="chat-empty">Aún no hay mensajes 👀<br>Escribe algo al grupo o toca un nombre arriba para susurrar en privado</div>`;
+  } else {
+    list.innerHTML = visible.map(m => {
+      const mine      = m.player === currentPlayer;
+      const isWhisper = !!m.to;
+      const time = new Date(m.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      let whisperTag = '';
+      if (isWhisper) {
+        whisperTag = mine
+          ? `<span class="chat-whisper-tag">🤫 a ${m.to}</span>`
+          : `<span class="chat-whisper-tag">🤫 susurro</span>`;
+      }
+      return `<div class="chat-msg${mine ? ' mine' : ''}${isWhisper ? ' whisper' : ''}">
+        <div class="chat-meta">
+          <span>${mine ? 'Tú' : escapeHtml(m.player)}</span>
+          ${whisperTag}
+          <span class="chat-time">${time}</span>
+        </div>
+        <div class="chat-text">${escapeHtml(m.text)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  /* Si la pestaña de chat está activa, marcar como leído */
+  const chatSection = document.getElementById('sec-chat');
+  if (chatSection && chatSection.classList.contains('active')) {
+    lastSeenChatCount = visible.length;
+    const badge = document.getElementById('chatBadge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  scrollChatToBottom();
+}
+
+function renderChatTargets() {
+  const row = document.getElementById('chatTargetRow');
+  if (!row) return;
+  const others = PLAYERS.filter(p => p !== currentPlayer);
+  let html = `<div class="chat-target-chip${chatTarget === null ? ' all-sel' : ''}" onclick="selectChatTarget(null)">💬 Todos</div>`;
+  html += others.map(p =>
+    `<div class="chat-target-chip${chatTarget === p ? ' whisper-sel' : ''}" onclick="selectChatTarget('${p}')">🤫 ${p}</div>`
+  ).join('');
+  row.innerHTML = html;
+
+  const input = document.getElementById('chatInput');
+  if (input) input.placeholder = chatTarget ? `Susurro a ${chatTarget}...` : 'Escribe un mensaje...';
+}
+
+function selectChatTarget(name) {
+  chatTarget = name;
+  renderChatTargets();
+  document.getElementById('chatInput').focus();
+}
+
+function sendChat() {
+  if (!currentPlayer) { toast('Inicia sesión primero'); return; }
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const msg = { player: currentPlayer, text, to: chatTarget || null, timestamp: Date.now() };
+  input.value = '';
+
+  if (db) {
+    db.ref('desfase/chat').push(msg).catch(() => toast('Error al enviar el mensaje'));
+  } else {
+    chatMessages.push({ key: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2), ...msg });
+    chatMessages.sort((a, b) => a.timestamp - b.timestamp);
+    renderChat();
+  }
+}
+
+function scrollChatToBottom() {
+  const list = document.getElementById('chatList');
+  if (list) setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+}
+
 /* ── JUEGOS ── */
 function renderJuegos() {
   document.getElementById('juegosList').innerHTML = JUEGOS.map((j, i) =>
@@ -1472,6 +1839,9 @@ renderScenarios();
 
 document.getElementById('adminPassInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') confirmReset();
+});
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
 });
 </script>
 </body>
