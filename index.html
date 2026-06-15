@@ -206,6 +206,9 @@
     /* ── SECTIONS ── */
     .section { display: none; }
     .section.active { display: block; }
+    /* Mayor especificidad que .section.active para que el chat use flex
+       SOLO cuando está activo; si no, .section { display:none } debe ganar */
+    .section.active.chat-section { display: flex; }
 
     .sec-label {
       font-size: 11px;
@@ -652,7 +655,6 @@
 
     /* ── CHAT ── */
     .chat-section {
-      display: flex;
       flex-direction: column;
       height: calc(100dvh - var(--nav-h) - 80px);
       padding-bottom: 0 !important;
@@ -1072,7 +1074,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v16</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v17</strong></p>
   </div>
 
   <!-- CONTENT -->
