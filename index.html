@@ -871,6 +871,7 @@
       color: var(--text);
     }
     .tin-status-value.active { color: var(--purple); }
+    .tin-status-value.hiding { color: var(--accent); }
     .tin-countdown {
       font-family: 'Syne', system-ui, sans-serif;
       font-size: 28px;
@@ -880,6 +881,7 @@
       margin: 8px 0;
       min-height: 36px;
     }
+    .tin-countdown.hiding { color: var(--accent); }
     .tin-progress {
       height: 6px;
       background: var(--surface2);
@@ -893,12 +895,79 @@
       border-radius: 3px;
       transition: width 0.2s linear;
     }
+    .tin-progress-fill.hiding {
+      background: linear-gradient(90deg, var(--gold), var(--accent));
+    }
     .tinieblas-btn {
       background: linear-gradient(135deg, #A855F7, #3B82F6);
     }
     .tinieblas-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    /* Banner de rol (busco / me escondo) */
+    .tin-role {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .tin-role.seeker {
+      background: rgba(255,69,0,0.12);
+      border: 1px solid rgba(255,69,0,0.35);
+      color: var(--accent);
+    }
+    .tin-role.hider {
+      background: var(--purple-dim);
+      border: 1px solid rgba(168,85,247,0.35);
+      color: var(--purple);
+    }
+    .tin-role small {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      margin-top: 4px;
+    }
+
+    /* Panel de puteo */
+    .tin-prank-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+    .tin-prank-name { font-size: 14px; font-weight: 500; color: var(--text); }
+    .tin-prank-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(220,38,38,0.4);
+      background: rgba(220,38,38,0.12);
+      color: #DC2626;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tin-prank-btn:active { transform: scale(0.96); }
+    .tin-prank-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .tin-prank-cooldown {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 6px;
     }
 
     /* ── PORRA NEW ── */
@@ -1155,7 +1224,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v18</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v20</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1262,7 +1331,7 @@
     <div id="sec-tinieblas" class="section">
       <div class="sec-label">Tinieblas — Modo Oscuridad</div>
       <div class="hint-box">
-        Apagad todas las luces. Los que buscan llevan la linterna del móvil; los que se escon­den corren a ocultarse en la oscuridad. Cada vez que suene el silbido, <strong style="color:var(--text)">todo el mundo se queda completamente quieto durante 3 segundos</strong> — el sonido sale de los 6 móviles a la vez, sincronizado, así que también delata dónde está cada uno.
+        Al pulsar "Empezar" la app elige al azar quién busca (solo 1) y tenéis <strong style="color:var(--text)">3 minutos para apagar luces y esconderos</strong>. Cuando acaba el tiempo, suena una señal especial — empieza la búsqueda. El que busca lleva la linterna del móvil (y opcionalmente una pistola Nerf para defenderse de los sustos 🔫). Cada vez que suene el silbido normal, <strong style="color:var(--text)">todo el mundo se queda completamente quieto durante 3 segundos</strong> — el sonido sale de los 6 móviles a la vez, sincronizado, así que también delata dónde está cada uno.
       </div>
 
       <div class="sync-bar" style="margin-bottom:14px">
@@ -1282,12 +1351,23 @@
         <div class="tin-progress"><div class="tin-progress-fill" id="tinProgressFill"></div></div>
       </div>
 
+      <div class="tin-role" id="tinRole" style="display:none"></div>
+
       <button class="spin-btn tinieblas-btn" id="tinStartBtn" onclick="startTinieblas()">
         🔦 EMPEZAR TINIEBLAS
       </button>
       <button class="reveal-btn" id="tinStopBtn" onclick="stopTinieblas()" style="display:none;color:#FF4500;border-color:rgba(255,69,0,0.3);margin-top:8px">
         ⏹ Detener Tinieblas
       </button>
+
+      <div class="tin-prank-panel" id="tinPrankPanel" style="display:none">
+        <div class="sec-label" style="margin-top:20px">😈 Putea a otro escondido</div>
+        <div class="hint-box" style="margin-bottom:10px">
+          Tienes 1 "bala" cada 2 minutos. Al usarla, le suena algo raro al móvil de quien elijas — delatando su posición. El buscador no ve ni usa esto.
+        </div>
+        <div id="tinPrankList"></div>
+        <div class="tin-prank-cooldown" id="tinPrankCooldown"></div>
+      </div>
     </div>
 
   </div><!-- /content -->
@@ -1356,11 +1436,14 @@ let lastChatTimestamp = 0;
 let pendingAdminAction = 'porra'; // 'porra' | 'chat' — qué resetear tras introducir la contraseña
 
 /* Tinieblas */
-let tinieblas = { active: false, startTime: 0, interval: 15, startedBy: null };
+let tinieblas = { active: false, startTime: 0, interval: 15, startedBy: null, seeker: null, pranks: {} };
 let tinSelectedInterval = 15;
 let tinAudioCtx = null;
 let tinTickHandle = null;
 let tinLastWhistleIdx = -1;
+let tinLastPrankSeen = 0;
+let tinPrankCooldownUntil = 0;
+const TIN_PRANK_COOLDOWN_MS = 120000; // 2 minutos
 
 /* ── DATA ── */
 const RETOS = [
@@ -1651,7 +1734,9 @@ function tryLogin() {
           active:    !!data.active,
           startTime: Number(data.startTime) || 0,
           interval:  Number(data.interval)  || 15,
-          startedBy: data.startedBy || null
+          startedBy: data.startedBy || null,
+          seeker:    data.seeker || null,
+          pranks:    data.pranks || {}
         };
 
         if (tinieblas.active) {
@@ -1659,10 +1744,28 @@ function tryLogin() {
             try { tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
           }
           if (!wasActive) {
-            /* Te incorporas a una ronda ya empezada: no recuperar silbidos pasados,
+            /* Te incorporas a una ronda ya empezada: no recuperar avisos pasados,
                solo sincronizar a partir de ahora */
             const elapsedNow = (Date.now() - tinieblas.startTime) / 1000;
-            tinLastWhistleIdx = Math.floor(elapsedNow / tinieblas.interval);
+            if (elapsedNow < TIN_HIDE_SECONDS) {
+              /* Aún en fase de escondeos: te unes a tiempo, recibirás la señal
+                 de inicio de búsqueda junto con los demás */
+              tinLastWhistleIdx = -1;
+            } else {
+              /* Ya está en fase de búsqueda: te sincronizas a partir del próximo silbido */
+              const searchElapsedNow = elapsedNow - TIN_HIDE_SECONDS;
+              tinLastWhistleIdx = Math.floor(searchElapsedNow / tinieblas.interval);
+            }
+            /* Nueva ronda: resetear estado de puteos para no arrastrar nada de antes */
+            tinLastPrankSeen = Date.now();
+            tinPrankCooldownUntil = 0;
+          } else {
+            /* Ronda ya en marcha: ¿me han puteado desde la última vez? */
+            const myPrank = tinieblas.pranks[currentPlayer];
+            if (myPrank && Number(myPrank.timestamp) > tinLastPrankSeen) {
+              tinLastPrankSeen = Number(myPrank.timestamp);
+              playPrankSound();
+            }
           }
           startTinTicking();
         } else {
@@ -2224,6 +2327,7 @@ function scrollChatToBottom() {
 
 /* ── TINIEBLAS ── */
 const TIN_INTERVALS = [10, 15, 20, 30];
+const TIN_HIDE_SECONDS = 180; // 3 minutos para esconderse antes de empezar la búsqueda
 
 function renderTinieblas() {
   /* Chips de intervalo */
@@ -2235,6 +2339,42 @@ function renderTinieblas() {
          ${disabled ? 'disabled' : ''} onclick="selectTinInterval(${sec})">${sec}s</button>`
     ).join('');
   }
+
+  /* Banner de rol */
+  const roleEl = document.getElementById('tinRole');
+  if (roleEl) {
+    if (!tinieblas.active || !tinieblas.seeker) {
+      roleEl.style.display = 'none';
+      roleEl.className = 'tin-role';
+    } else if (currentPlayer === tinieblas.seeker) {
+      roleEl.style.display = '';
+      roleEl.className = 'tin-role seeker';
+      roleEl.innerHTML = '🔦 ¡TE TOCA BUSCAR!<small>Cuenta hasta que acabe el tiempo de escondeos y sal a por ellos</small>';
+    } else {
+      roleEl.style.display = '';
+      roleEl.className = 'tin-role hider';
+      roleEl.innerHTML = `🙈 Te escondes<small>Busca: <strong>${tinieblas.seeker}</strong></small>`;
+    }
+  }
+
+  /* Panel de puteo (solo escondidos) */
+  const panel = document.getElementById('tinPrankPanel');
+  if (panel) {
+    const amHider = tinieblas.active && tinieblas.seeker && currentPlayer !== tinieblas.seeker;
+    panel.style.display = amHider ? '' : 'none';
+    if (amHider) {
+      const targets = PLAYERS.filter(p => p !== currentPlayer && p !== tinieblas.seeker);
+      const list = document.getElementById('tinPrankList');
+      list.innerHTML = targets.map(p =>
+        `<div class="tin-prank-item">
+           <span class="tin-prank-name">${p}</span>
+           <button class="tin-prank-btn" onclick="sendPrank('${p}')">😈 Putear</button>
+         </div>`
+      ).join('');
+      updateTinPrankCooldown();
+    }
+  }
+
   updateTinUI();
 }
 
@@ -2266,17 +2406,86 @@ function playWhistle() {
   if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
 }
 
+/* Señal especial al terminar los 3 minutos de escondeos: más larga y dramática */
+function playSearchStart() {
+  try {
+    if (!tinAudioCtx) tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tinAudioCtx.state === 'suspended') tinAudioCtx.resume();
+    const ctx = tinAudioCtx;
+    for (let i = 0; i < 3; i++) {
+      const start = ctx.currentTime + i * 0.18;
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(500, start);
+      osc.frequency.exponentialRampToValueAtTime(1100, start + 0.12);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.35, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.15);
+      osc.start(start);
+      osc.stop(start + 0.16);
+    }
+  } catch (e) { /* navegador sin Web Audio */ }
+
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100, 50, 300]);
+}
+
+/* Sonido de "puteo": distinto a los anteriores, tipo "wah-wah" de payaso */
+function playPrankSound() {
+  try {
+    if (!tinAudioCtx) tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tinAudioCtx.state === 'suspended') tinAudioCtx.resume();
+    const ctx = tinAudioCtx;
+    [0, 0.22].forEach((offset, i) => {
+      const start = ctx.currentTime + offset;
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      const freqStart = i === 0 ? 600 : 480;
+      osc.frequency.setValueAtTime(freqStart, start);
+      osc.frequency.exponentialRampToValueAtTime(freqStart * 0.55, start + 0.2);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+      osc.start(start);
+      osc.stop(start + 0.24);
+    });
+  } catch (e) { /* navegador sin Web Audio */ }
+
+  if (navigator.vibrate) navigator.vibrate([50, 40, 50, 40, 50, 40, 50, 40, 200]);
+}
+
 function startTinTicking() {
   stopTinTicking();
   tinTickHandle = setInterval(() => {
     if (!tinieblas.active) return;
     const elapsed = (Date.now() - tinieblas.startTime) / 1000;
-    const idx = Math.floor(elapsed / tinieblas.interval);
+
+    if (elapsed < TIN_HIDE_SECONDS) {
+      /* Fase de escondeos: sin silbidos, solo cuenta atrás */
+      updateTinUI(elapsed);
+      updateTinPrankCooldown();
+      return;
+    }
+
+    /* Fase de búsqueda */
+    const searchElapsed = elapsed - TIN_HIDE_SECONDS;
+    const idx = Math.floor(searchElapsed / tinieblas.interval);
     if (idx > tinLastWhistleIdx) {
+      if (tinLastWhistleIdx === -1) {
+        /* Primera vez que entramos en fase de búsqueda: señal especial */
+        playSearchStart();
+      } else {
+        playWhistle();
+      }
       tinLastWhistleIdx = idx;
-      playWhistle();
     }
     updateTinUI(elapsed);
+    updateTinPrankCooldown();
   }, 250);
 }
 
@@ -2297,8 +2506,10 @@ function updateTinUI(elapsedOverride) {
 
   if (!tinieblas.active) {
     statusEl.textContent = 'Detenido';
-    statusEl.classList.remove('active');
+    statusEl.classList.remove('active', 'hiding');
+    countdown.classList.remove('hiding');
     countdown.innerHTML = '&nbsp;';
+    fillEl.classList.remove('hiding');
     fillEl.style.width = '0%';
     if (startBtn) startBtn.style.display = '';
     if (stopBtn)  stopBtn.style.display  = 'none';
@@ -2308,14 +2519,39 @@ function updateTinUI(elapsedOverride) {
   if (startBtn) startBtn.style.display = 'none';
   if (stopBtn)  stopBtn.style.display  = '';
 
-  const elapsed   = elapsedOverride !== undefined ? elapsedOverride : (Date.now() - tinieblas.startTime) / 1000;
-  const into      = ((elapsed % tinieblas.interval) + tinieblas.interval) % tinieblas.interval;
-  const remaining = tinieblas.interval - into;
+  const elapsed = elapsedOverride !== undefined ? elapsedOverride : (Date.now() - tinieblas.startTime) / 1000;
 
-  statusEl.textContent = `Activo — iniciado por ${tinieblas.startedBy || '?'}`;
-  statusEl.classList.add('active');
-  countdown.textContent = `🔇 ${Math.ceil(remaining)}s`;
-  fillEl.style.width = `${(into / tinieblas.interval) * 100}%`;
+  if (elapsed < TIN_HIDE_SECONDS) {
+    /* ── Fase de escondeos ── */
+    const remaining = TIN_HIDE_SECONDS - elapsed;
+    const mm = Math.floor(remaining / 60);
+    const ss = Math.floor(remaining % 60);
+
+    statusEl.textContent = `🙈 Escondeos — iniciado por ${tinieblas.startedBy || '?'}`;
+    statusEl.classList.remove('active');
+    statusEl.classList.add('hiding');
+
+    countdown.classList.add('hiding');
+    countdown.textContent = `${mm}:${String(ss).padStart(2, '0')}`;
+
+    fillEl.classList.add('hiding');
+    fillEl.style.width = `${(elapsed / TIN_HIDE_SECONDS) * 100}%`;
+  } else {
+    /* ── Fase de búsqueda ── */
+    const searchElapsed = elapsed - TIN_HIDE_SECONDS;
+    const into      = ((searchElapsed % tinieblas.interval) + tinieblas.interval) % tinieblas.interval;
+    const remaining = tinieblas.interval - into;
+
+    statusEl.textContent = `🔦 Búsqueda — iniciado por ${tinieblas.startedBy || '?'}`;
+    statusEl.classList.remove('hiding');
+    statusEl.classList.add('active');
+
+    countdown.classList.remove('hiding');
+    countdown.textContent = `🔇 ${Math.ceil(remaining)}s`;
+
+    fillEl.classList.remove('hiding');
+    fillEl.style.width = `${(into / tinieblas.interval) * 100}%`;
+  }
 }
 
 function startTinieblas() {
@@ -2329,7 +2565,8 @@ function startTinieblas() {
     active:    true,
     startTime: Date.now(),
     interval:  tinSelectedInterval,
-    startedBy: currentPlayer || '?'
+    startedBy: currentPlayer || '?',
+    seeker:    PLAYERS[Math.floor(Math.random() * PLAYERS.length)]
   };
 
   if (db) {
@@ -2339,7 +2576,10 @@ function startTinieblas() {
       .catch(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'offline', '⚠️ Error al iniciar'));
   } else {
     tinieblas = data;
+    tinieblas.pranks = {};
     tinLastWhistleIdx = -1;
+    tinLastPrankSeen = Date.now();
+    tinPrankCooldownUntil = 0;
     startTinTicking();
     renderTinieblas();
   }
@@ -2353,8 +2593,42 @@ function stopTinieblas() {
       .then(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'online', 'Sincronizado en tiempo real'))
       .catch(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'offline', '⚠️ Error al detener'));
   } else {
-    tinieblas = { active: false, startTime: 0, interval: tinSelectedInterval, startedBy: null };
+    tinieblas = { active: false, startTime: 0, interval: tinSelectedInterval, startedBy: null, seeker: null, pranks: {} };
     renderTinieblas();
+  }
+}
+
+/* Cada escondido tiene 1 "bala" cada 2 minutos para putear a otro escondido */
+function sendPrank(target) {
+  if (Date.now() < tinPrankCooldownUntil) return; /* en cooldown, ignorar */
+  if (!tinieblas.active || currentPlayer === tinieblas.seeker) return; /* el buscador no puede usarlo */
+
+  tinPrankCooldownUntil = Date.now() + TIN_PRANK_COOLDOWN_MS;
+  updateTinPrankCooldown(); /* feedback instantáneo, sin esperar a Firebase */
+
+  const prankData = { from: currentPlayer, timestamp: Date.now() };
+  if (db) {
+    db.ref('desfase/tinieblas/pranks/' + target).set(prankData).catch(() => {});
+  } else {
+    tinieblas.pranks = tinieblas.pranks || {};
+    tinieblas.pranks[target] = prankData;
+    toast(`🔇 (modo local, no se sincroniza con otros móviles)`);
+  }
+}
+
+function updateTinPrankCooldown() {
+  const cooldownEl = document.getElementById('tinPrankCooldown');
+  if (!cooldownEl) return;
+  const remaining = tinPrankCooldownUntil - Date.now();
+  const buttons = document.querySelectorAll('#tinPrankList .tin-prank-btn');
+
+  if (remaining > 0) {
+    const ss = Math.ceil(remaining / 1000);
+    cooldownEl.textContent = `🔇 Próxima bala disponible en ${ss}s`;
+    buttons.forEach(b => b.disabled = true);
+  } else {
+    cooldownEl.textContent = '😈 Tienes 1 bala lista para usar';
+    buttons.forEach(b => b.disabled = false);
   }
 }
 
