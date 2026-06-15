@@ -820,6 +820,87 @@
     .chat-dot.public  { background: var(--accent); }
     .chat-dot.whisper { background: var(--purple); }
 
+    /* ── TINIEBLAS ── */
+    .tin-interval-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tin-chip {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text2);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tin-chip.selected {
+      background: var(--purple-dim);
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+    .tin-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tin-status {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .tin-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .tin-status-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tin-status-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .tin-status-value.active { color: var(--purple); }
+    .tin-countdown {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      color: var(--text);
+      margin: 8px 0;
+      min-height: 36px;
+    }
+    .tin-progress {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .tin-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--purple), var(--accent));
+      border-radius: 3px;
+      transition: width 0.2s linear;
+    }
+    .tinieblas-btn {
+      background: linear-gradient(135deg, #A855F7, #3B82F6);
+    }
+    .tinieblas-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ── PORRA NEW ── */
     .scenario.mine { border-color: var(--accent); background: rgba(255,69,0,0.05); }
     .s-betters { font-size: 12px; color: var(--text2); margin: 6px 0 10px; min-height: 16px; }
@@ -1074,7 +1155,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v17</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v18</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1177,6 +1258,38 @@
       </div>
     </div>
 
+    <!-- TINIEBLAS -->
+    <div id="sec-tinieblas" class="section">
+      <div class="sec-label">Tinieblas — Modo Oscuridad</div>
+      <div class="hint-box">
+        Apagad todas las luces. Los que buscan llevan la linterna del móvil; los que se escon­den corren a ocultarse en la oscuridad. Cada vez que suene el silbido, <strong style="color:var(--text)">todo el mundo se queda completamente quieto durante 3 segundos</strong> — el sonido sale de los 6 móviles a la vez, sincronizado, así que también delata dónde está cada uno.
+      </div>
+
+      <div class="sync-bar" style="margin-bottom:14px">
+        <div class="sync-dot" id="tinSyncDot"></div>
+        <span id="tinSyncTxt">Conectando...</span>
+      </div>
+
+      <div class="sec-label">Intervalo del silbido</div>
+      <div class="tin-interval-row" id="tinIntervalRow"></div>
+
+      <div class="tin-status">
+        <div class="tin-status-row">
+          <span class="tin-status-label">Estado</span>
+          <span class="tin-status-value" id="tinStatusValue">Detenido</span>
+        </div>
+        <div class="tin-countdown" id="tinCountdown">&nbsp;</div>
+        <div class="tin-progress"><div class="tin-progress-fill" id="tinProgressFill"></div></div>
+      </div>
+
+      <button class="spin-btn tinieblas-btn" id="tinStartBtn" onclick="startTinieblas()">
+        🔦 EMPEZAR TINIEBLAS
+      </button>
+      <button class="reveal-btn" id="tinStopBtn" onclick="stopTinieblas()" style="display:none;color:#FF4500;border-color:rgba(255,69,0,0.3);margin-top:8px">
+        ⏹ Detener Tinieblas
+      </button>
+    </div>
+
   </div><!-- /content -->
 
   <!-- BOTTOM NAV -->
@@ -1200,6 +1313,10 @@
         <span class="chat-dot public" id="chatDotPublic"></span>
         <span class="chat-dot whisper" id="chatDotWhisper"></span>
       </span>
+    </button>
+    <button class="nav-btn" id="nav-tinieblas" onclick="switchTab('tinieblas')">
+      <svg viewBox="0 0 24 24"><path d="M9 2h6v4l2 2v12a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V8l2-2V2z"/><line x1="9.5" y1="9.5" x2="14.5" y2="9.5"/></svg>
+      Tinieblas
     </button>
   </nav>
 
@@ -1237,6 +1354,13 @@ let chatFirstLoad = true;
 let lastSeenChatTimestamp = 0; // se carga desde localStorage al hacer login
 let lastChatTimestamp = 0;
 let pendingAdminAction = 'porra'; // 'porra' | 'chat' — qué resetear tras introducir la contraseña
+
+/* Tinieblas */
+let tinieblas = { active: false, startTime: 0, interval: 15, startedBy: null };
+let tinSelectedInterval = 15;
+let tinAudioCtx = null;
+let tinTickHandle = null;
+let tinLastWhistleIdx = -1;
 
 /* ── DATA ── */
 const RETOS = [
@@ -1518,10 +1642,51 @@ function tryLogin() {
       document.getElementById('chatSyncTxt').textContent = '⚠️ Firebase no deja LEER el chat: ' + (err.code || err.message || err);
     });
 
+    /* ── TINIEBLAS LISTENER ── */
+    db.ref('desfase/tinieblas').on('value', snap => {
+      try {
+        const data = snap.val() || {};
+        const wasActive = tinieblas.active;
+        tinieblas = {
+          active:    !!data.active,
+          startTime: Number(data.startTime) || 0,
+          interval:  Number(data.interval)  || 15,
+          startedBy: data.startedBy || null
+        };
+
+        if (tinieblas.active) {
+          if (!tinAudioCtx) {
+            try { tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+          }
+          if (!wasActive) {
+            /* Te incorporas a una ronda ya empezada: no recuperar silbidos pasados,
+               solo sincronizar a partir de ahora */
+            const elapsedNow = (Date.now() - tinieblas.startTime) / 1000;
+            tinLastWhistleIdx = Math.floor(elapsedNow / tinieblas.interval);
+          }
+          startTinTicking();
+        } else {
+          stopTinTicking();
+        }
+
+        document.getElementById('tinSyncDot').className = 'sync-dot online';
+        document.getElementById('tinSyncTxt').textContent = 'Sincronizado en tiempo real';
+        renderTinieblas();
+      } catch (err) {
+        document.getElementById('tinSyncDot').className = 'sync-dot offline';
+        document.getElementById('tinSyncTxt').textContent = '⚠️ Error: ' + (err.message || err);
+      }
+    }, err => {
+      document.getElementById('tinSyncDot').className = 'sync-dot offline';
+      document.getElementById('tinSyncTxt').textContent = '⚠️ Firebase no deja LEER tinieblas: ' + (err.code || err.message || err);
+    });
+
   } else if (!db) {
     setSyncStatus('off');
     document.getElementById('chatSyncDot').className = '';
     document.getElementById('chatSyncTxt').textContent = 'Firebase no configurado — chat solo local';
+    document.getElementById('tinSyncDot').className = '';
+    document.getElementById('tinSyncTxt').textContent = 'Firebase no configurado — modo local';
   }
 
   /* 2º: renderizar con el usuario actual */
@@ -1533,6 +1698,7 @@ function tryLogin() {
     updateActiveLbl();
     renderChatTargets();
     renderChat();
+    renderTinieblas();
   } catch (err) {
     syncErrorMsg = '⚠️ Error de render: ' + (err.message || err);
     setSyncStatus('offline');
@@ -1549,7 +1715,7 @@ function showLoginError(msg) {
 
 /* ── NAVEGACIÓN ── */
 function switchTab(tab) {
-  ['retos','porra','juegos','chat'].forEach(t => {
+  ['retos','porra','juegos','chat','tinieblas'].forEach(t => {
     document.getElementById('sec-' + t).classList.toggle('active', t === tab);
     document.getElementById('nav-' + t).classList.toggle('active', t === tab);
   });
@@ -2054,6 +2220,157 @@ function sendChat() {
 function scrollChatToBottom() {
   const list = document.getElementById('chatList');
   if (list) setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
+}
+
+/* ── TINIEBLAS ── */
+const TIN_INTERVALS = [10, 15, 20, 30];
+
+function renderTinieblas() {
+  /* Chips de intervalo */
+  const row = document.getElementById('tinIntervalRow');
+  if (row) {
+    const disabled = tinieblas.active;
+    row.innerHTML = TIN_INTERVALS.map(sec =>
+      `<button class="tin-chip${tinSelectedInterval === sec ? ' selected' : ''}"
+         ${disabled ? 'disabled' : ''} onclick="selectTinInterval(${sec})">${sec}s</button>`
+    ).join('');
+  }
+  updateTinUI();
+}
+
+function selectTinInterval(sec) {
+  if (tinieblas.active) return;
+  tinSelectedInterval = sec;
+  renderTinieblas();
+}
+
+function playWhistle() {
+  try {
+    if (!tinAudioCtx) tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tinAudioCtx.state === 'suspended') tinAudioCtx.resume();
+    const ctx  = tinAudioCtx;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(700, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.55);
+  } catch (e) { /* navegador sin Web Audio */ }
+
+  if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+}
+
+function startTinTicking() {
+  stopTinTicking();
+  tinTickHandle = setInterval(() => {
+    if (!tinieblas.active) return;
+    const elapsed = (Date.now() - tinieblas.startTime) / 1000;
+    const idx = Math.floor(elapsed / tinieblas.interval);
+    if (idx > tinLastWhistleIdx) {
+      tinLastWhistleIdx = idx;
+      playWhistle();
+    }
+    updateTinUI(elapsed);
+  }, 250);
+}
+
+function stopTinTicking() {
+  if (tinTickHandle) {
+    clearInterval(tinTickHandle);
+    tinTickHandle = null;
+  }
+}
+
+function updateTinUI(elapsedOverride) {
+  const statusEl   = document.getElementById('tinStatusValue');
+  const countdown  = document.getElementById('tinCountdown');
+  const fillEl     = document.getElementById('tinProgressFill');
+  const startBtn   = document.getElementById('tinStartBtn');
+  const stopBtn    = document.getElementById('tinStopBtn');
+  if (!statusEl) return;
+
+  if (!tinieblas.active) {
+    statusEl.textContent = 'Detenido';
+    statusEl.classList.remove('active');
+    countdown.innerHTML = '&nbsp;';
+    fillEl.style.width = '0%';
+    if (startBtn) startBtn.style.display = '';
+    if (stopBtn)  stopBtn.style.display  = 'none';
+    return;
+  }
+
+  if (startBtn) startBtn.style.display = 'none';
+  if (stopBtn)  stopBtn.style.display  = '';
+
+  const elapsed   = elapsedOverride !== undefined ? elapsedOverride : (Date.now() - tinieblas.startTime) / 1000;
+  const into      = ((elapsed % tinieblas.interval) + tinieblas.interval) % tinieblas.interval;
+  const remaining = tinieblas.interval - into;
+
+  statusEl.textContent = `Activo — iniciado por ${tinieblas.startedBy || '?'}`;
+  statusEl.classList.add('active');
+  countdown.textContent = `🔇 ${Math.ceil(remaining)}s`;
+  fillEl.style.width = `${(into / tinieblas.interval) * 100}%`;
+}
+
+function startTinieblas() {
+  /* Crear/desbloquear el contexto de audio en el gesto del usuario (requisito de los navegadores) */
+  try {
+    if (!tinAudioCtx) tinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tinAudioCtx.state === 'suspended') tinAudioCtx.resume();
+  } catch (e) { /* sin Web Audio, seguirá funcionando solo con vibración */ }
+
+  const data = {
+    active:    true,
+    startTime: Date.now(),
+    interval:  tinSelectedInterval,
+    startedBy: currentPlayer || '?'
+  };
+
+  if (db) {
+    setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'syncing');
+    db.ref('desfase/tinieblas').set(data)
+      .then(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'online', 'Sincronizado en tiempo real'))
+      .catch(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'offline', '⚠️ Error al iniciar'));
+  } else {
+    tinieblas = data;
+    tinLastWhistleIdx = -1;
+    startTinTicking();
+    renderTinieblas();
+  }
+}
+
+function stopTinieblas() {
+  stopTinTicking();
+  if (db) {
+    setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'syncing');
+    db.ref('desfase/tinieblas').set({ active: false })
+      .then(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'online', 'Sincronizado en tiempo real'))
+      .catch(() => setSyncStatus2('tinSyncDot', 'tinSyncTxt', 'offline', '⚠️ Error al detener'));
+  } else {
+    tinieblas = { active: false, startTime: 0, interval: tinSelectedInterval, startedBy: null };
+    renderTinieblas();
+  }
+}
+
+/* Pequeño helper genérico para puntos de sincronización con id propio (Tinieblas) */
+function setSyncStatus2(dotId, txtId, state, customTxt) {
+  const dot = document.getElementById(dotId);
+  const txt = document.getElementById(txtId);
+  if (!dot) return;
+  dot.className = 'sync-dot ' + (state === 'off' ? '' : state);
+  const labels = {
+    online:  'Sincronizado en tiempo real',
+    syncing: 'Guardando...',
+    offline: '⚠️ Sin conexión',
+    off:     'Firebase no configurado — modo local',
+  };
+  txt.textContent = customTxt || labels[state] || '';
 }
 
 /* ── JUEGOS ── */
