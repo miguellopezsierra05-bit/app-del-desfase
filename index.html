@@ -355,14 +355,6 @@
       transform: none !important;
     }
     .consequence-tier-row { margin-bottom: 8px; }
-    .consequence-victim {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text2);
-      line-height: 1.5;
-    }
 
     /* ── PORRA ── */
     .fianza-hero {
@@ -1080,7 +1072,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v13</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v15</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1102,7 +1094,7 @@
 
       <div class="sec-label" style="margin-top:24px">Ruleta de Consecuencias</div>
       <div class="consequence-intro">
-        Para cuando alguien pierde un reto o una apuesta. Gira la ruleta y que el destino decida el castigo — de un simple shot a algo legendario.
+        Para cuando a ti te toca un reto de los de arriba y NO lo cumples. Gira la ruleta y que el destino decida tu castigo — de un simple shot a algo legendario.
       </div>
       <div class="wheel-wrap">
         <div class="wheel-pointer"></div>
@@ -1125,7 +1117,6 @@
       <div class="spin-result" id="conseqResult">
         <div class="consequence-tier-row" id="conseqTier"></div>
         <div class="spin-text" id="conseqText"></div>
-        <div class="consequence-victim" id="conseqVictim"></div>
       </div>
     </div>
 
@@ -1287,11 +1278,16 @@ const CONSEQUENCES = [
   {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"Móvil bloqueado 1 hora. Si lo tocas, doblas la penalización"},
   {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"A la sauna hasta que el grupo dé la orden de salir"},
   // ── NUCLEAR ☠️ ──
-  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Llama a quien decida el grupo y cuéntale, muy serio, dónde estás y qué hora es"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Publica en tu story, sin previo aviso, un vídeo de 10 segundos diciendo muy serio dónde estás y qué hora es — como si fuera una prueba de vida"},
   {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Publica una story con lo que decida el grupo, sin verla antes"},
   {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Esclavo personal de otro jugador (elegido al azar) durante la próxima hora"},
   {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Cuenta tu anécdota más vergonzosa del grupo de clase, sin saltarte nada"},
   {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"DJ obligatorio 30 minutos — lo que pongas, suena, sin vetos"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Llama a tu ex (o, si no tienes ex o prefieres no hacerlo, a la persona de tu lista de contactos que más corte te dé llamar ahora mismo) y pregúntale muy serio dónde dejaste el cargador. Cuelga sin dar más explicaciones."},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Graba un audio de 30 segundos con acento argentino contando qué tal el día y mándalo al grupo de clase"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Manda una nota de voz de 1 minuto a la persona de tu lista que más corte te dé escribirle ahora mismo, hablando todo el rato con acento argentino, sin explicar nada"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Escribe 'che, ¿todo joya?' y dos mensajes más con acento argentino al primer chat que abras en tu móvil"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Manda un audio cantando el cumpleaños feliz con acento argentino a uno de los seis del grupo (lo decide el resto), aunque no sea su cumpleaños"},
 ];
 
 const SCENARIOS = [
@@ -1606,14 +1602,11 @@ function spinConsequence() {
 
   setTimeout(() => {
     try {
-      const c      = CONSEQUENCES[Math.floor(Math.random() * CONSEQUENCES.length)];
-      const victim = PLAYERS[Math.floor(Math.random() * PLAYERS.length)];
+      const c = CONSEQUENCES[Math.floor(Math.random() * CONSEQUENCES.length)];
 
       document.getElementById('conseqTier').innerHTML =
         `<span class="badge" style="background:${c.bg};color:${c.c}">${c.icon} ${c.tier}</span>`;
       document.getElementById('conseqText').textContent = c.t;
-      document.getElementById('conseqVictim').innerHTML =
-        `🎯 Si nadie se ofrece voluntario, le toca a: <strong style="color:var(--accent)">${victim}</strong>`;
 
       const res = document.getElementById('conseqResult');
       res.classList.add('show');
