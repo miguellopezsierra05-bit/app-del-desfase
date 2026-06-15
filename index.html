@@ -284,6 +284,86 @@
       margin-top: 6px;
     }
 
+    /* ── RULETA DE CONSECUENCIAS ── */
+    .consequence-intro {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border-left: 3px solid #DC2626;
+    }
+    .wheel-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 4px auto 20px;
+    }
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(
+        #22C55E 0% 12.5%, #3B82F6 12.5% 25%, #FF4500 25% 37.5%, #DC2626 37.5% 50%,
+        #22C55E 50% 62.5%, #3B82F6 62.5% 75%, #FF4500 75% 87.5%, #DC2626 87.5% 100%
+      );
+      position: relative;
+      transition: transform 3.2s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+      box-shadow: 0 0 0 6px var(--surface), 0 0 0 8px var(--border2), 0 10px 28px rgba(0,0,0,0.45);
+    }
+    .wheel-emoji {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-top: 20px solid var(--gold);
+      z-index: 5;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    .wheel-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 30px; height: 30px;
+      margin: -15px;
+      background: var(--surface);
+      border: 3px solid var(--gold);
+      border-radius: 50%;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .consequence-btn {
+      background: linear-gradient(135deg, #FF4500, #A855F7);
+    }
+    .consequence-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    .consequence-tier-row { margin-bottom: 8px; }
+    .consequence-victim {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
     /* ── PORRA ── */
     .fianza-hero {
       background: var(--surface);
@@ -1000,7 +1080,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v12</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v13</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1019,6 +1099,34 @@
       </div>
       <div class="sec-label" style="margin-top:20px">Todos los retos (18)</div>
       <div id="retosList"></div>
+
+      <div class="sec-label" style="margin-top:24px">Ruleta de Consecuencias</div>
+      <div class="consequence-intro">
+        Para cuando alguien pierde un reto o una apuesta. Gira la ruleta y que el destino decida el castigo — de un simple shot a algo legendario.
+      </div>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer"></div>
+        <div class="wheel" id="conseqWheel">
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(26.8px,-64.7px)">🍺</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(64.7px,-26.8px)">😬</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(64.7px,26.8px)">🔥</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(26.8px,64.7px)">☠️</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(-26.8px,64.7px)">🍺</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(-64.7px,26.8px)">😬</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(-64.7px,-26.8px)">🔥</span>
+          <span class="wheel-emoji" style="transform: translate(-50%,-50%) translate(-26.8px,-64.7px)">☠️</span>
+        </div>
+        <div class="wheel-center">🎰</div>
+      </div>
+      <button class="spin-btn consequence-btn" id="conseqBtn" onclick="spinConsequence()">
+        <span class="spin-ico" id="conseqIco">🎰</span>
+        GIRAR LA RULETA
+      </button>
+      <div class="spin-result" id="conseqResult">
+        <div class="consequence-tier-row" id="conseqTier"></div>
+        <div class="spin-text" id="conseqText"></div>
+        <div class="consequence-victim" id="conseqVictim"></div>
+      </div>
     </div>
 
     <!-- PORRA -->
@@ -1157,6 +1265,33 @@ const RETOS = [
   {t:"Reto sauna encadenado: aguantar 2 minutos más que el récord del grupo",n:"Extremo",tag:"Sauna",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
   {t:"Mandar una foto haciendo una peineta al grupo de profesores del ciclo",n:"Extremo",tag:"Penitencia",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
   {t:"Comerte lo que el jugador de tu izquierda prepare en la BBQ sin protestar",n:"Medio",tag:"BBQ",c:"#FF4500",bg:"rgba(255,69,0,0.12)"},
+];
+
+const CONSEQUENCES = [
+  // ── LEVE 🍺 ──
+  {tier:"Leve",    icon:"🍺", c:"#22C55E", bg:"rgba(34,197,94,0.12)",  t:"Bebe un shot doble sin rechistar"},
+  {tier:"Leve",    icon:"🍺", c:"#22C55E", bg:"rgba(34,197,94,0.12)",  t:"Bebe lo que decida el de tu derecha — mezcla incluida"},
+  {tier:"Leve",    icon:"🍺", c:"#22C55E", bg:"rgba(34,197,94,0.12)",  t:"Bebe con los ojos cerrados, sin preguntar qué es"},
+  {tier:"Leve",    icon:"🍺", c:"#22C55E", bg:"rgba(34,197,94,0.12)",  t:"Intercambia tu bebida con la de otro jugador a su elección"},
+  {tier:"Leve",    icon:"🍺", c:"#22C55E", bg:"rgba(34,197,94,0.12)",  t:"Bebe cada vez que alguien diga 'desfase' durante los próximos 10 minutos"},
+  // ── MEDIA 😬 ──
+  {tier:"Media",   icon:"😬", c:"#3B82F6", bg:"rgba(59,130,246,0.12)", t:"Habla con el acento que decida el grupo durante 10 minutos"},
+  {tier:"Media",   icon:"😬", c:"#3B82F6", bg:"rgba(59,130,246,0.12)", t:"Ropa puesta al revés durante 20 minutos, sin trucos"},
+  {tier:"Media",   icon:"😬", c:"#3B82F6", bg:"rgba(59,130,246,0.12)", t:"Eres el camarero oficial: sirve lo que te pidan durante 15 minutos"},
+  {tier:"Media",   icon:"😬", c:"#3B82F6", bg:"rgba(59,130,246,0.12)", t:"Imita al último que perdió un reto, durante 5 minutos seguidos"},
+  {tier:"Media",   icon:"😬", c:"#3B82F6", bg:"rgba(59,130,246,0.12)", t:"Solo puedes comunicarte por gestos durante 10 minutos"},
+  // ── ALTA 🔥 ──
+  {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"Al jacuzzi vestido/a tal y como estás ahora mismo"},
+  {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"5 minutos de estatua en la piscina — cero reacciones, pase lo que pase"},
+  {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"Esta noche duermes donde decida el grupo — sin quejas"},
+  {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"Móvil bloqueado 1 hora. Si lo tocas, doblas la penalización"},
+  {tier:"Alta",    icon:"🔥", c:"#FF4500", bg:"rgba(255,69,0,0.12)",   t:"A la sauna hasta que el grupo dé la orden de salir"},
+  // ── NUCLEAR ☠️ ──
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Llama a quien decida el grupo y cuéntale, muy serio, dónde estás y qué hora es"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Publica una story con lo que decida el grupo, sin verla antes"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Esclavo personal de otro jugador (elegido al azar) durante la próxima hora"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"Cuenta tu anécdota más vergonzosa del grupo de clase, sin saltarte nada"},
+  {tier:"Nuclear", icon:"☠️", c:"#DC2626", bg:"rgba(220,38,38,0.14)",  t:"DJ obligatorio 30 minutos — lo que pongas, suena, sin vetos"},
 ];
 
 const SCENARIOS = [
@@ -1448,6 +1583,57 @@ function spinReto() {
   res.classList.remove('show');
   void res.offsetWidth;
   res.classList.add('show');
+}
+
+/* ── RULETA DE CONSECUENCIAS ── */
+let conseqRotation = 0;
+let conseqSpinning = false;
+
+function spinConsequence() {
+  if (conseqSpinning) return;
+  conseqSpinning = true;
+
+  const wheel = document.getElementById('conseqWheel');
+  const btn   = document.getElementById('conseqBtn');
+  btn.disabled = true;
+
+  /* Mínimo 5 vueltas completas + extra aleatorio para que parezca azar real */
+  conseqRotation += 1800 + Math.floor(Math.random() * 1080);
+  wheel.style.transform = `rotate(${conseqRotation}deg)`;
+
+  /* Ocultar el resultado anterior mientras gira */
+  document.getElementById('conseqResult').classList.remove('show');
+
+  setTimeout(() => {
+    try {
+      const c      = CONSEQUENCES[Math.floor(Math.random() * CONSEQUENCES.length)];
+      const victim = PLAYERS[Math.floor(Math.random() * PLAYERS.length)];
+
+      document.getElementById('conseqTier').innerHTML =
+        `<span class="badge" style="background:${c.bg};color:${c.c}">${c.icon} ${c.tier}</span>`;
+      document.getElementById('conseqText').textContent = c.t;
+      document.getElementById('conseqVictim').innerHTML =
+        `🎯 Si nadie se ofrece voluntario, le toca a: <strong style="color:var(--accent)">${victim}</strong>`;
+
+      const res = document.getElementById('conseqResult');
+      res.classList.add('show');
+      try { res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) { /* navegadores antiguos */ }
+
+      if (navigator.vibrate) {
+        const patterns = {
+          Leve:    [80],
+          Media:   [80, 40, 80],
+          Alta:    [100, 50, 100, 50, 100],
+          Nuclear: [150, 60, 150, 60, 150, 60, 220]
+        };
+        navigator.vibrate(patterns[c.tier] || [100]);
+      }
+    } finally {
+      /* Reactivar el botón SIEMPRE, aunque algo falle arriba */
+      btn.disabled = false;
+      conseqSpinning = false;
+    }
+  }, 3300);
 }
 
 /* ── RETOS LIST ── */
