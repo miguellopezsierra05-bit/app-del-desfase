@@ -525,7 +525,7 @@
       overflow: hidden;
       transition: max-height 0.3s ease;
     }
-    .juego-body.open { max-height: 600px; }
+    .juego-body.open { max-height: 900px; }
     .juego-inner {
       padding: 12px 16px 16px;
       border-top: 1px solid var(--border);
@@ -545,6 +545,89 @@
       position: relative;
     }
     .juego-tips li::before { content: '→'; position: absolute; left: 0; }
+
+    /* Modo "Empezar a jugar" */
+    .juego-play-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: linear-gradient(135deg, #FF4500, #A855F7);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .juego-play-btn:active { transform: scale(0.98); }
+    .juego-play-area { margin-top: 14px; }
+    .juego-play-counter {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .juego-play-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 22px 16px;
+      text-align: center;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .juego-play-main {
+      font-family: 'Syne', system-ui, sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .juego-play-sub {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .juego-play-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .juego-play-next {
+      flex: 2;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .juego-play-reset {
+      flex: 1;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .juego-play-next:active, .juego-play-reset:active { transform: scale(0.97); }
 
     /* ── TOAST ── */
     .toast {
@@ -1224,7 +1307,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v20</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v21</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1513,22 +1596,100 @@ const SCENARIOS = [
   {id:10, t:"La fianza llega intacta. No pasa nada. Todo bien. Nadie rompe nada. (Imposible.)",                           m:"×5"},
 ];
 
+/* ── CONTENIDO PARA EL MODO "EMPEZAR A JUGAR" ── */
+const YO_NUNCA_FRASES = [
+  "Yo nunca he copiado en un examen",
+  "Yo nunca he llegado tarde a clase por quedarme dormido",
+  "Yo nunca he mentido sobre haber estudiado",
+  "Yo nunca he suspendido una asignatura por un punto",
+  "Yo nunca he stalkeado el Instagram de un ex",
+  "Yo nunca he fingido estar enfermo para no ir a clase o al trabajo",
+  "Yo nunca me he liado con alguien la misma noche que lo conocí",
+  "Yo nunca he mandado un mensaje a la persona equivocada",
+  "Yo nunca me he quedado dormido en clase",
+  "Yo nunca he roto algo en casa de otra persona y no lo he dicho",
+  "Yo nunca he bailado encima de una mesa",
+  "Yo nunca me he hecho pasar por otra persona por chat",
+  "Yo nunca he salido de fiesta entre semana antes de un examen",
+  "Yo nunca he perdido el móvil de fiesta",
+  "Yo nunca he vomitado en una fiesta",
+  "Yo nunca le he mentido a mis padres sobre dónde estaba",
+  "Yo nunca he tenido una cita a ciegas",
+  "Yo nunca me he disfrazado para una fiesta del instituto o el curro",
+  "Yo nunca he hecho trampas jugando a las cartas",
+  "Yo nunca he llorado viendo una película",
+];
+
+const BEBE_SI_FRASES = [
+  "Bebe si alguna vez copiaste en un examen",
+  "Bebe si llegaste tarde a la FCT",
+  "Bebe si aprobaste una asignatura con un 5.0 exacto",
+  "Bebe si te has quedado dormido en clase",
+  "Bebe si mandaste un mensaje al grupo equivocado",
+  "Bebe si te has saltado una clase para dormir",
+  "Bebe si has hecho un trabajo la noche antes de entregarlo",
+  "Bebe si te has examinado con resaca",
+  "Bebe si has discutido con un profesor",
+  "Bebe si has suspendido más de 2 asignaturas en un cuatrimestre",
+  "Bebe si te has dormido durante una explicación por Teams o Meet",
+  "Bebe si has hecho un examen sin haber estudiado nada",
+  "Bebe si has copiado una práctica de un compañero",
+  "Bebe si te has reído en clase en el peor momento posible",
+  "Bebe si has llegado al instituto o al curro en pijama o casi",
+];
+
+const VERDAD_PREGUNTAS = [
+  "¿Cuál es la mentira más gorda que le has dicho a alguien de este grupo?",
+  "¿A quién del grupo llamarías primero si tuvieras un problema serio?",
+  "¿Cuál es tu mayor inseguridad?",
+  "¿Has tenido sentimientos por alguien de este grupo, aunque fuera pasajero?",
+  "¿Cuál es la cosa más rara que has buscado en Google?",
+  "¿Qué es lo que más te arrepientes de no haber dicho a alguien?",
+  "¿Cuál ha sido tu peor cita?",
+  "¿Has fingido que te caía bien alguien de clase?",
+  "¿Cuál es el secreto que menos gente sabe de ti?",
+  "¿Qué es lo más vergonzoso que has hecho estando borracho?",
+];
+
+const CARD_SUITS  = ["♠", "♥", "♦", "♣"];
+const CARD_VALUES = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+const KING_RULES = {
+  "A":  "Regla nueva — inventa una regla que dure toda la partida",
+  "2":  "Tú — eliges a alguien para que beba",
+  "3":  "Yo — bebes tú",
+  "4":  "Chicas — beben todas las chicas",
+  "5":  "Manos — el último en tocar el suelo bebe",
+  "6":  "Chicos — beben todos los chicos",
+  "7":  "Cielo — el último en levantar la mano bebe",
+  "8":  "Pareja — elige a tu pareja de bebida el resto de la partida",
+  "9":  "Rima — di una palabra, el siguiente debe rimar, quien no rime bebe",
+  "10": "Categoría — di una categoría y seguid diciendo ejemplos por turnos",
+  "J":  "Yo nunca — di una frase 'yo nunca he...'",
+  "Q":  "Preguntas — pregunta a alguien, esa persona pregunta a otra, quien responda bebe",
+  "K":  "¡Vierte en el vaso del rey! Si eres el 4º Rey, te lo bebes entero",
+};
+
 const JUEGOS = [
   {e:"✋",n:"Yo nunca",b:"Clásico",bc:"#22C55E",bb:"rgba(34,197,94,0.12)",
    r:"Cada jugador dice 'Yo nunca he...' y quien SÍ lo haya hecho bebe. Si más de la mitad bebe, el que lo dijo también.",
-   t:["Ideal para arrancar la noche y romper el hielo","Usa frases del ciclo: 'Yo nunca he suspendido Redes'","Si nadie bebe, el que lo dijo hace un shot"]},
+   t:["Ideal para arrancar la noche y romper el hielo","Usa frases del ciclo: 'Yo nunca he suspendido Redes'","Si nadie bebe, el que lo dijo hace un shot"],
+   play:{type:"frases", deck:YO_NUNCA_FRASES}},
   {e:"🚌",n:"Bus Driver",b:"Con cartas",bc:"#A855F7",bb:"rgba(168,85,247,0.12)",
    r:"Un 'conductor' recibe 5 cartas. Adivina: ¿roja o negra? ¿más alta o baja? ¿dentro o fuera? ¿palo? Si falla, bebe el número de cartas en mesa y vuelve a empezar.",
-   t:["El conductor no cambia hasta que acierte las 4 en fila","Versión extreme: doble en el último turno","El palo es la más difícil — reserva el bluf para aquí"]},
+   t:["El conductor no cambia hasta que acierte las 4 en fila","Versión extreme: doble en el último turno","El palo es la más difícil — reserva el bluf para aquí"],
+   play:{type:"carta"}},
   {e:"🎲",n:"Verdad, Reto o Shot",b:"Social",bc:"#EC4899",bb:"rgba(236,72,153,0.12)",
    r:"Por turnos elige: Verdad (pregunta comprometida), Reto (usa la ruleta de esta app) o Shot (un shot sin preguntas ni drama).",
-   t:["El grupo puede vetar una verdad si es muy fácil","Rechazar un reto = shot doble automático","En casa rural los retos son de piscina, sauna o BBQ"]},
+   t:["El grupo puede vetar una verdad si es muy fácil","Rechazar un reto = shot doble automático","En casa rural los retos son de piscina, sauna o BBQ"],
+   play:{type:"vrs"}},
   {e:"👑",n:"El Rey",b:"Con cartas",bc:"#FFD000",bb:"rgba(255,208,0,0.1)",
    r:"Baraja boca abajo en el centro. As=regla nueva, 2=tú, 3=yo, 4=chicas, 5=manos, 6=chicos, 7=cielo, 8=pareja, 9=rima, 10=categoría, J=yo nunca, Q=preguntas, K=vierte en el vaso del rey.",
-   t:["El 4º Rey bebe el vaso del rey entero — nadie quiere ser el 4º","Las reglas del As se acumulan toda la partida","Muy recomendable para la primera noche"]},
+   t:["El 4º Rey bebe el vaso del rey entero — nadie quiere ser el 4º","Las reglas del As se acumulan toda la partida","Muy recomendable para la primera noche"],
+   play:{type:"cartaRey"}},
   {e:"🎓",n:"Bebe si... (Edición ASIR)",b:"Especial",bc:"#3B82F6",bb:"rgba(59,130,246,0.12)",
    r:"Bebe si: copiaste en un examen, llegaste tarde a la FCT, pasaste una asignatura con un 5.0 exacto, te quedaste dormido en clase, mandaste un mensaje al grupo equivocado.",
-   t:["Añade los tuyos propios en el grupo antes de salir","El que más beba prepara las hamburguesas","Combínalo con Yo Nunca para más variedad"]},
+   t:["Añade los tuyos propios en el grupo antes de salir","El que más beba prepara las hamburguesas","Combínalo con Yo Nunca para más variedad"],
+   play:{type:"frases", deck:BEBE_SI_FRASES}},
   {e:"🔫",n:"Ruleta de shots",b:"Peligroso",bc:"#FF4500",bb:"rgba(255,69,0,0.12)",
    r:"Pon N vasos boca abajo, solo uno tiene bebida. Giráis una botella — quien señale levanta un vaso. Shot si hay bebida, turno pasa si no.",
    t:["Mezcla diferentes bebidas para más morbo","Sube la dificultad poniendo más vasos con bebida","El último vaso que quede lo bebe el que más tarde en pillarlo"]},
@@ -2665,6 +2826,17 @@ function renderJuegos() {
         <div class="juego-inner">
           <p class="juego-rules">${j.r}</p>
           <ul class="juego-tips">${j.t.map(tip => `<li>${tip}</li>`).join('')}</ul>
+          ${j.play ? `
+            <button class="juego-play-btn" id="jpbtn${i}" onclick="startJuego(${i})">▶ Empezar a jugar</button>
+            <div class="juego-play-area" id="jp${i}" style="display:none">
+              <div class="juego-play-counter" id="jpc${i}"></div>
+              <div class="juego-play-card" id="jpcard${i}"></div>
+              <div class="juego-play-controls">
+                <button class="juego-play-next" onclick="nextJuegoCard(${i})">Siguiente ▶</button>
+                <button class="juego-play-reset" onclick="resetJuegoDeck(${i})">🔄 Barajar</button>
+              </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     </div>`
@@ -2674,6 +2846,89 @@ function renderJuegos() {
 function toggleJuego(i) {
   document.getElementById('jb' + i).classList.toggle('open');
   document.getElementById('ch' + i).classList.toggle('open');
+}
+
+/* ── MODO "EMPEZAR A JUGAR" ── */
+let juegoPlay = {}; // índice del juego -> { deck: [...], pos: 0 }
+
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildJuegoDeck(playSpec) {
+  if (playSpec.type === 'frases') {
+    return shuffleArr(playSpec.deck).map(f => ({ main: f, sub: null }));
+  }
+  if (playSpec.type === 'cartaRey' || playSpec.type === 'carta') {
+    const cards = [];
+    CARD_SUITS.forEach(s => CARD_VALUES.forEach(v => cards.push({ v, s })));
+    return shuffleArr(cards).map(c => ({
+      main: `${c.v}${c.s}`,
+      sub: playSpec.type === 'cartaRey' ? KING_RULES[c.v] : null
+    }));
+  }
+  if (playSpec.type === 'vrs') {
+    let verdadQueue = shuffleArr(VERDAD_PREGUNTAS);
+    const rounds = [];
+    for (let i = 0; i < 30; i++) {
+      const cat = ['Verdad', 'Reto', 'Shot'][Math.floor(Math.random() * 3)];
+      if (cat === 'Verdad') {
+        if (verdadQueue.length === 0) verdadQueue = shuffleArr(VERDAD_PREGUNTAS);
+        rounds.push({ main: '🗣️ VERDAD', sub: verdadQueue.pop() });
+      } else if (cat === 'Reto') {
+        rounds.push({ main: '🎯 RETO', sub: 'Ve a la pestaña Retos y gira la ruleta' });
+      } else {
+        rounds.push({ main: '🥃 SHOT', sub: 'Bebe sin preguntas ni excusas' });
+      }
+    }
+    return rounds;
+  }
+  return [];
+}
+
+function startJuego(i) {
+  const j = JUEGOS[i];
+  if (!j.play) return;
+  juegoPlay[i] = { deck: buildJuegoDeck(j.play), pos: 0 };
+
+  const body = document.getElementById('jb' + i);
+  if (!body.classList.contains('open')) toggleJuego(i);
+
+  document.getElementById('jp' + i).style.display = '';
+  document.getElementById('jpbtn' + i).style.display = 'none';
+  renderJuegoCard(i);
+}
+
+function renderJuegoCard(i) {
+  const state = juegoPlay[i];
+  if (!state) return;
+  const card = state.deck[state.pos];
+  document.getElementById('jpc' + i).textContent = `${state.pos + 1} / ${state.deck.length}`;
+  document.getElementById('jpcard' + i).innerHTML =
+    `<div class="juego-play-main">${card.main}</div>${card.sub ? `<div class="juego-play-sub">${card.sub}</div>` : ''}`;
+}
+
+function nextJuegoCard(i) {
+  const state = juegoPlay[i];
+  if (!state) return;
+  if (state.pos < state.deck.length - 1) {
+    state.pos++;
+    renderJuegoCard(i);
+  } else {
+    document.getElementById('jpcard' + i).innerHTML =
+      `<div class="juego-play-main">🔄 ¡Se acabaron!</div><div class="juego-play-sub">Pulsa "Barajar" para seguir jugando</div>`;
+  }
+}
+
+function resetJuegoDeck(i) {
+  const j = JUEGOS[i];
+  juegoPlay[i] = { deck: buildJuegoDeck(j.play), pos: 0 };
+  renderJuegoCard(i);
 }
 
 /* ── TOAST ── */
