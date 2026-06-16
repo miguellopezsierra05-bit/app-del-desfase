@@ -1307,7 +1307,7 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <h1>App del <span>Desfase</span> 🔥</h1>
-    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v24</strong></p>
+    <p>Graduados ASIR 2026 — casa rural edition · <strong style="color:var(--accent)">v27</strong></p>
   </div>
 
   <!-- CONTENT -->
@@ -1529,7 +1529,6 @@ let tinPrankCooldownUntil = 0;
 const TIN_PRANK_COOLDOWN_MS = 120000; // 2 minutos
 
 /* ── DATA ── */
-/* ── DATA ── */
 const RETOS = [
   {t:"Meterte en el jacuzzi vestido/a completo durante 3 minutos sin quitarte nada",n:"Medio",tag:"Jacuzzi",c:"#A855F7",bg:"rgba(168,85,247,0.12)"},
   {t:"Saltar a la piscina celebrando como si ETA hubiera ganado las elecciones",n:"Alto",tag:"Piscina",c:"#3B82F6",bg:"rgba(59,130,246,0.12)"},
@@ -1547,7 +1546,7 @@ const RETOS = [
   {t:"Tirarte al agua vestido/a contando atrás desde 5 tú solo, sin empuje de nadie",n:"Alto",tag:"Piscina",c:"#3B82F6",bg:"rgba(59,130,246,0.12)"},
   {t:"Contar tu peor anécdota del ciclo con todos los detalles. Sin censura.",n:"Social",tag:"Confesión",c:"#EC4899",bg:"rgba(236,72,153,0.12)"},
   {t:"Reto sauna encadenado: aguantar 2 minutos más que el récord del grupo",n:"Extremo",tag:"Sauna",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
-  {t:"Graba un video tuyo con guantes de boxeo tirando manoplas y lo subes a tu historia en blanco y negro con el emoji de "coming soon" como si te fueras a pegar en la UFC",n:"Extremo",tag:"Penitencia",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
+  {t:"Graba un video tuyo con guantes de boxeo tirando manoplas y lo subes a tu historia en blanco y negro con el emoji de coming soon como si te fueras a pegar en la UFC",n:"Extremo",tag:"Penitencia",c:"#FF4500",bg:"rgba(255,69,0,0.15)"},
   {t:"Comerte lo que el jugador de tu izquierda prepare en la BBQ sin protestar (no vale miembros falicos)",n:"Medio",tag:"BBQ",c:"#FF4500",bg:"rgba(255,69,0,0.12)"},
 ];
 
@@ -2001,7 +2000,18 @@ function setSyncStatus(state) {
 
 /* ── LOGIN ── */
 const VALID_USERS = ['Miguel', 'Fabián', 'Germán', 'Alejandro', 'Diego', 'Javi'];
-const PASSWORD    = 'clave$1';
+
+/* Contraseña individual por jugador — cada uno le dice a Miguel la suya por privado
+   y se actualiza aquí antes de subir la app. Si alguien ve que está puesta una
+   distinta a la que pidió, es porque Miguel ha tenido que ponerla él. */
+const PASSWORDS = {
+  'Miguel':    'clave$1',
+  'Fabián':    'clave$1',
+  'Germán':    'Javihoyos$1',
+  'Alejandro': 'clave$1',
+  'Diego':     'Clave#1',
+  'Javi':      'clave$1',
+};
 
 document.getElementById('passInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') tryLogin();
@@ -2017,7 +2027,7 @@ function selectUser(n) {
 function tryLogin() {
   const pass = document.getElementById('passInput').value;
   if (!loginUser) { showLoginError('Selecciona tu nombre primero'); return; }
-  if (pass !== PASSWORD) {
+  if (pass !== PASSWORDS[loginUser]) {
     showLoginError('Contraseña incorrecta 🚫');
     document.getElementById('passInput').value = '';
     return;
